@@ -1,0 +1,9 @@
+{
+  "name": "Straumr",
+  "version_number": "0.1.0",
+  "website_url": "",
+  "description": "Living water: rivers that flow, white-water rapids, sea currents, tides that rise and fall, whirlpools, seasons and snowmelt. Works on its own; detects Riverheim and Rivers and Lakes. Beta.",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2360"
+  ]
+}

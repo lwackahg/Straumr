@@ -1,0 +1,2429 @@
+<meta charset="utf-8">
+<title>Straumr Flow Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a chart table. A slim header band, the night-sea map filling the middle, a tide-clock dock below. */
+:root {
+  --bg: #e8edef;
+  --panel: #f8fafa;
+  --fg: #15222a;
+  --muted: #536470;
+  --line: #ccd6db;
+  --accent: #a3531b;
+  --accent-fg: #fff8f1;
+  --flood: #2a7889;
+  --ebb: #9b6a2c;
+  /* The map keeps one deliberate night-sea look in both themes. */
+  --map-void: #05090d;
+  --map-glass: rgba(9, 17, 23, 0.84);
+  --map-text: #e4edf0;
+  --map-muted: #9db0ba;
+  --map-line: rgba(150, 185, 200, 0.24);
+  --map-accent: #f0a65e;
+  --font-display: "Grenze", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a1115; --panel: #111b21; --fg: #e1e9ec; --muted: #8a9da7; --line: #22313a;
+    --accent: #e49b56; --accent-fg: #1b1006; --flood: #5db7c6; --ebb: #d0a062;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a1115; --panel: #111b21; --fg: #e1e9ec; --muted: #8a9da7; --line: #22313a;
+  --accent: #e49b56; --accent-fg: #1b1006; --flood: #5db7c6; --ebb: #d0a062;
+  color-scheme: dark;
+}
+
+/* Own reset too: the game serves this page as it is, without the artifact wrapper. */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; overflow: hidden; }
+.app { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Header band */
+.bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.wordmark { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-height: 1; letter-spacing: 0.01em; }
+.brand-sub { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); }
+.seed { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
+.seed input { font-family: var(--font-data); font-size: 14px; width: 14ch; padding: 6px 10px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+.seed input::placeholder { color: var(--muted); }
+.seed input[aria-invalid="true"] { border-color: #c4553b; }
+#hereBtn { max-width: 26ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Segmented choices: which generator builds a seed; how fast things play */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; flex: none; }
+.seg label { position: relative; cursor: pointer; }
+.seg input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.seg span { display: block; padding: 5px 10px; font-size: 12.5px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.seg label + label span { border-left: 1px solid var(--line); }
+.seg input:checked + span { background: var(--accent); color: var(--accent-fg); }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: -2px; }
+.meta { flex: 1 1 280px; min-width: 0; display: flex; flex-wrap: wrap; gap: 2px 14px; color: var(--muted); font-size: 13px; }
+.meta b { color: var(--fg); font-weight: 600; font-family: var(--font-data); font-size: 13.5px; }
+.meta .tag { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); }
+.bar-actions { display: flex; gap: 8px; align-items: center; }
+
+button { font: inherit; font-size: 13px; font-weight: 500; line-height: 1.2; cursor: pointer; border-radius: 6px; padding: 7px 12px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--fg); }
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+button.primary:hover { filter: brightness(1.06); }
+button.link { border: 0; background: none; padding: 7px 4px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* The map */
+.stage { position: relative; min-height: 0; overflow: hidden; background: var(--map-void); }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#flow { touch-action: none; cursor: grab; }
+#flow.dragging { cursor: grabbing; }
+.glass { background: var(--map-glass); color: var(--map-text); border: 1px solid var(--map-line); border-radius: 8px;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+
+.tools { position: absolute; top: 12px; right: max(12px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.layers { display: flex; flex-direction: column; gap: 1px; padding: 8px 12px 8px 10px; }
+.layers label { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; cursor: pointer; white-space: nowrap; }
+.layers input { accent-color: var(--map-accent); width: 15px; height: 15px; margin: 0; }
+.layers .sw { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.zoom { display: flex; gap: 4px; padding: 4px; }
+.zoom button { background: transparent; border: 1px solid transparent; color: var(--map-text); min-width: 34px; padding: 5px 8px; font-family: var(--font-data); }
+.zoom button:hover { border-color: var(--map-line); }
+.chip { padding: 6px 10px; font-family: var(--font-data); font-size: 12px; font-variant-numeric: tabular-nums; min-width: 150px; max-width: 250px; }
+.chip .meter { height: 3px; margin-top: 5px; border-radius: 2px; background: var(--map-line); overflow: hidden; }
+.chip .meter i { display: block; height: 100%; width: 0; background: var(--map-accent); transition: width 0.2s; }
+
+.readout { position: absolute; top: 12px; left: max(12px, env(safe-area-inset-left, 0px)); width: min(330px, calc(100% - 24px));
+  padding: 10px 12px; font-size: 12.5px; pointer-events: none; }
+.readout .hint { color: var(--map-muted); }
+.readout dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 12px; margin: 0; }
+.readout dt { color: var(--map-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; padding-top: 2px; white-space: nowrap; }
+.readout dd { margin: 0; font-family: var(--font-data); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.readout dd.white { color: #ffffff; font-weight: 500; }
+.readout .src { margin-top: 6px; font-size: 11px; color: var(--map-muted); }
+
+.howto { position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); bottom: 12px; width: min(410px, calc(100% - 24px));
+  padding: 14px 16px 12px; font-size: 13px; line-height: 1.5; }
+.howto h2 { font-family: var(--font-display); font-weight: 600; font-size: 22px; line-height: 1.1; margin: 0 28px 6px 0; text-wrap: balance; }
+.howto p { margin: 0 0 8px; color: var(--map-muted); }
+.howto ol { margin: 0 0 8px; padding-left: 20px; display: grid; gap: 4px; }
+.howto code { font-family: var(--font-data); font-size: 12px; background: rgba(150, 185, 200, 0.14); padding: 1px 5px; border-radius: 4px; color: var(--map-text); overflow-wrap: anywhere; }
+.howto .close { position: absolute; top: 8px; right: 8px; background: transparent; border: 0; color: var(--map-muted); font-size: 18px; padding: 4px 8px; }
+.howto .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
+.howto .note { font-size: 12px; margin: 8px 0 0; }
+.howto .note .link { color: var(--map-text); padding: 0; font-size: 12px; }
+.howto .gen { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid var(--map-line); font-size: 12px; }
+.howto .gen b { color: var(--map-text); font-weight: 600; }
+
+.drop { position: absolute; inset: 12px; border: 2px dashed var(--map-accent); border-radius: 12px; display: grid; place-items: center;
+  background: rgba(5, 9, 13, 0.7); color: var(--map-text); font-size: 18px; pointer-events: none; }
+.status { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); max-width: min(540px, calc(100% - 24px));
+  display: flex; gap: 10px; align-items: flex-start; padding: 9px 12px; font-size: 13px; }
+.status.error { border-color: #e0785c; }
+.status button { background: transparent; border: 0; color: var(--map-muted); padding: 0 4px; font-size: 16px; }
+
+/* Tide-clock dock */
+.dock {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--panel); border-top: 1px solid var(--line);
+}
+.time { flex: 3 1 440px; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.play { width: 40px; height: 40px; padding: 0; border-radius: 50%; display: grid; place-items: center; }
+.play svg { width: 16px; height: 16px; fill: currentColor; }
+.track { min-width: 0; display: grid; gap: 0; }
+.curve-wrap { position: relative; }
+.curve-wrap svg { display: block; width: 100%; height: 34px; }
+.curve-wrap .lab { position: absolute; left: 2px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
+.curve-wrap .lab.f { top: -1px; color: var(--flood); }
+.curve-wrap .lab.e { bottom: -1px; color: var(--ebb); }
+.flood-area { fill: var(--flood); fill-opacity: 0.22; }
+.ebb-area { fill: var(--ebb); fill-opacity: 0.22; }
+.curve-line { fill: none; stroke: var(--muted); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.mid { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.marker { stroke: var(--accent); stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+#daySlider { width: 100%; margin: 2px 0 0; accent-color: var(--accent); }
+.hours { display: flex; justify-content: space-between; font-family: var(--font-data); font-size: 10.5px; color: var(--muted); padding: 0 2px; }
+.phase { min-width: 118px; max-width: 220px; text-align: right; font-variant-numeric: tabular-nums; }
+.moonrow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; margin-top: 6px; }
+.moon { width: 18px; height: 18px; display: block; }
+.moon-dark { fill: #2c3842; stroke: var(--muted); stroke-width: 0.8; }
+.moon-lit { fill: #eee8cf; }
+#moonSlider { width: 100%; margin: 0; accent-color: var(--accent); }
+.moonlabel { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.phase .clock { font-family: var(--font-data); font-size: 18px; font-weight: 500; }
+.phase .state { font-size: 12.5px; color: var(--muted); }
+.phase .state b { color: var(--fg); font-weight: 600; }
+
+.legend { flex: 2 1 300px; min-width: 0; display: grid; gap: 8px; font-size: 12px; color: var(--muted); }
+.legend .head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.legend .head { align-items: center; }
+.legend .head b { color: var(--fg); font-weight: 600; }
+.legend .note { margin: 0; font-size: 11.5px; }
+.legend .seg span { padding: 3px 9px; font-size: 11.5px; }
+.scale { position: relative; height: 22px; }
+.ramp { height: 9px; border-radius: 3px; }
+.scale .ticks { position: relative; height: 13px; font-family: var(--font-data); font-size: 10.5px; }
+.scale .ticks span { position: absolute; top: 1px; transform: translateX(-50%); white-space: nowrap; }
+.scale .ticks span:first-child { transform: none; }
+.keys { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; }
+.key { display: inline-flex; align-items: center; gap: 6px; }
+.key i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; }
+.key i.foam { background: #ffffff; box-shadow: 0 0 0 1px var(--line); height: 5px; }
+.key i.tide { width: 34px; height: 8px; background: linear-gradient(90deg, rgba(107, 44, 145, 0.45), rgba(212, 85, 58, 0.75), rgba(255, 226, 140, 0.95)); }
+.key i.pool { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #7fb6c4; border-right-color: transparent; }
+.layers .sw.ring { border-radius: 50%; background: transparent; border: 2px solid #bfe9f2; border-right-color: transparent; }
+
+/* Tide view: the button, the gauge panel on the map, its keys */
+.tidebtn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; font-weight: 600; font-size: 13.5px; border-radius: 999px;
+  border: 1.5px solid var(--accent); color: var(--accent); background: transparent; flex: none; }
+.tidebtn svg { width: 22px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.tidebtn[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+.tidebtn kbd { font-family: var(--font-data); font-size: 11px; opacity: 0.7; }
+.gauge { position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); bottom: 12px; width: min(440px, calc(100% - 24px));
+  padding: 12px 14px; font-size: 12.5px; }
+.gauge-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.gauge h3 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 19px; line-height: 1.1; }
+.gauge-body { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px; align-items: start; }
+.gauge-bar { width: 120px; height: 150px; display: block; }
+.gauge-curve { width: 100%; height: 90px; display: block; }
+.gauge-hours { display: flex; justify-content: space-between; font-family: var(--font-data); font-size: 10.5px; color: var(--map-muted); }
+.gauge-times { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; margin: 8px 0 0; }
+.gauge-times dt { color: var(--map-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; padding-top: 2px; white-space: nowrap; }
+.gauge-times dd { margin: 0; font-family: var(--font-data); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gauge-times dd small { color: var(--map-muted); font-size: 10.5px; }
+.gauge-note { margin: 8px 0 0; color: var(--map-muted); font-size: 12px; line-height: 1.45; }
+.gauge-note.warn { color: #f0b48a; }
+.glass .seg { border-color: var(--map-line); }
+.glass .seg span { color: var(--map-muted); padding: 4px 10px; font-size: 12px; }
+.glass .seg label + label span { border-left-color: var(--map-line); }
+.glass .seg input:checked + span { background: var(--map-accent); color: #1b1006; }
+.g-axis, .g-tick { stroke: var(--map-muted); stroke-width: 1.2; }
+.g-band { fill: rgba(150, 185, 200, 0.16); }
+.g-high { fill: rgb(96, 168, 255); }
+.g-low { fill: rgb(222, 120, 90); }
+.g-mark { fill: var(--map-text); }
+.g-val { fill: var(--map-text); font: 600 13px var(--font-data); }
+.g-lab { fill: var(--map-muted); font: 10px var(--font-data); }
+.gc-mid { stroke: var(--map-line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.gc-line { fill: none; stroke: var(--map-text); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.gc-now { stroke: var(--map-accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.gc-hi { fill: rgba(96, 168, 255, 0.22); }
+.gc-lo { fill: rgba(222, 120, 90, 0.22); }
+.tidekeys { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; }
+.key i.sw-flood { background: rgb(72, 214, 180); height: 8px; }
+.key i.sw-ebb { background: rgb(245, 168, 72); height: 8px; }
+.key i.sw-level { width: 64px; height: 8px; background: linear-gradient(90deg, rgb(222, 120, 90), rgba(222, 120, 90, 0.15) 45%, rgba(96, 168, 255, 0.15) 55%, rgb(96, 168, 255)); }
+
+@media (max-width: 640px) {
+  .wordmark { font-size: 24px; }
+  .gauge { width: auto; right: max(12px, env(safe-area-inset-right, 0px)); }
+  .gauge-body { grid-template-columns: 96px minmax(0, 1fr); }
+  .gauge-bar { width: 96px; height: 120px; }
+  .stage.tideview .readout { top: 60px; bottom: auto; }
+  .seed { flex: 1 1 100%; }
+  .seed input { flex: 1 1 8ch; width: auto; min-width: 0; }
+  .tools { left: max(12px, env(safe-area-inset-left, 0px)); align-items: stretch; }
+  .layers { flex-direction: row; gap: 14px; overflow-x: auto; padding: 6px 10px; }
+  .zoom { align-self: flex-end; flex-direction: column; }
+  .chip { align-self: flex-end; min-width: 0; }
+  .readout { top: auto; bottom: 12px; width: auto; right: max(12px, env(safe-area-inset-right, 0px)); font-size: 12px; }
+  .stage[data-howto="open"] .readout { display: none; }
+  .howto { width: auto; right: max(12px, env(safe-area-inset-right, 0px)); max-height: calc(100% - 140px); overflow-y: auto; }
+  .time { flex-basis: 100%; }
+  .phase { min-width: 96px; }
+  .moonlabel { white-space: normal; text-align: right; }
+  .phase .clock { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chip .meter i { transition: none; }
+}
+</style>
+
+<div class="app">
+  <header class="bar">
+    <div class="brand"><span class="wordmark">Straumr</span><span class="brand-sub">Flow map</span></div>
+    <form class="seed" id="seedForm" autocomplete="off" hidden>
+      <label class="visually-hidden" for="seedInput">Seed</label>
+      <input id="seedInput" name="seed" type="text" maxlength="10" spellcheck="false" placeholder="Seed" autocapitalize="off">
+      <button type="submit" class="primary" id="seedBtn">Generate</button>
+      <div class="seg" id="worldPick" role="radiogroup" aria-label="Which generator builds the seed" hidden>
+        <label><input type="radio" name="wgen" value="riverheim" checked><span>Riverheim world</span></label>
+        <label><input type="radio" name="wgen" value="valheim"><span>Valheim world</span></label>
+      </div>
+      <button type="button" id="hereBtn" hidden>This world</button>
+    </form>
+    <div class="meta" id="meta" aria-live="polite"></div>
+    <div class="bar-actions">
+      <button type="button" class="link" id="howBtn">How it works</button>
+      <button type="button" id="loadBtn">Load flow map</button>
+      <input type="file" id="fileInput" accept=".json,application/json" hidden>
+    </div>
+  </header>
+
+  <main class="stage" id="stage" data-howto="open">
+    <canvas id="base" aria-hidden="true"></canvas>
+    <canvas id="marks" aria-hidden="true"></canvas>
+    <canvas id="flow" aria-label="Map of the world's water, with currents moving across it"></canvas>
+
+    <div class="readout glass" id="readout" aria-live="polite"></div>
+
+    <div class="tools">
+      <div class="layers glass" role="group" aria-label="Layers">
+        <label><input type="checkbox" id="layRivers" checked><span class="sw" style="background:#3f86a3"></span>Rivers</label>
+        <label><input type="checkbox" id="laySea" checked><span class="sw" style="background:#59c0c7"></span>Sea currents</label>
+        <label><input type="checkbox" id="layTide"><span class="sw" style="background:#d4553a"></span>Tidal races</label>
+        <label><input type="checkbox" id="layPools" checked><span class="sw ring"></span>Whirlpools</label>
+        <label><input type="checkbox" id="layWhite" checked><span class="sw" style="background:#ffffff"></span>White water</label>
+        <label><input type="checkbox" id="layAnim" checked><span class="sw" style="background:transparent;border:1px solid var(--map-muted)"></span>Animate</label>
+      </div>
+      <div class="zoom glass" role="group" aria-label="Zoom">
+        <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
+        <button type="button" id="zoomOut" aria-label="Zoom out">&minus;</button>
+        <button type="button" id="zoomFit" aria-label="Show the whole world">Fit</button>
+        <button type="button" id="zoomYou" aria-label="Go to where you are" hidden>You</button>
+      </div>
+      <div class="chip glass" id="detailChip" role="status" hidden><span id="chipText"></span><div class="meter" id="chipMeter"><i id="chipFill"></i></div></div>
+    </div>
+
+    <section class="howto glass" id="howto" aria-labelledby="howtoTitle">
+      <button type="button" class="close" id="howClose" aria-label="Close">&times;</button>
+      <div id="howtoFile">
+        <h2 id="howtoTitle">See your world's water</h2>
+        <p>This is a made-up sample island. Load a flow map from Straumr to see a world of yours.</p>
+        <ol>
+          <li>In game, open the console (<code>F5</code>), type <code>devcommands</code>, then <code>straumr map</code>.</li>
+          <li>Find <code>BepInEx/config/Straumr-flowmap.json</code> in your mod profile.</li>
+          <li>Drop it on this page, or choose it here.</li>
+        </ol>
+        <div class="row"><button type="button" class="primary" id="loadBtn2">Choose file</button></div>
+        <p class="note">Dedicated server: set <code>[Diagnostics] WorldGenCommand = flowmap</code> in <code>wackah.straumr.cfg</code>; the file lands in the server's <code>BepInEx/config</code>. The file stays in this browser and is never uploaded.</p>
+        <p class="note">The map shows the world's shape and rivers (Riverheim's or Valheim's) and Straumr's water physics. Rivers and Lakes' streams aren't drawn.</p>
+        <p class="gen"><b>Seed generator:</b> in Valheim (the main menu is fine), open the console (<code>F5</code>), type <code>devcommands</code>, then <code>straumr atlas</code>. It opens this page from your own game and builds any seed with your mods' settings.</p>
+      </div>
+      <div id="howtoAtlas" hidden>
+        <h2>Generate a world</h2>
+        <p>Type a seed in the bar above and press Generate. Your game builds it with its own mods and settings<span id="atlasWith"></span>, usually in 20 to 90 seconds, then shows the whole world.</p>
+        <p id="hereHint" hidden>Or press <b>This world</b> to map the world you're in, without generating anything.</p>
+        <p>Zoom in and the game fills in 2&nbsp;m ground and 4&nbsp;m currents, square by square.</p>
+        <p class="note">Shows the world's shape and rivers (Riverheim's or Valheim's) and Straumr's water physics. Rivers and Lakes' streams aren't shown: its generator makes them for a real world.</p>
+        <p class="note">Until then this is a made-up sample island. You can also open a saved flow map: <button type="button" class="link" id="loadBtn3">choose a file</button>.</p>
+      </div>
+    </section>
+
+    <section class="gauge glass" id="gauge" aria-labelledby="gaugeTitle" hidden>
+      <div class="gauge-head">
+        <h3 id="gaugeTitle">Open sea tide</h3>
+        <div class="seg" id="tideModePick" role="radiogroup" aria-label="The tide view shows">
+          <label><input type="radio" name="tmode" value="currents" checked><span>Currents</span></label>
+          <label><input type="radio" name="tmode" value="height"><span>Height</span></label>
+        </div>
+      </div>
+      <div class="gauge-body">
+        <svg class="gauge-bar" id="gaugeBar" viewBox="0 0 120 150" aria-hidden="true"></svg>
+        <div>
+          <svg class="gauge-curve" id="gaugeCurve" viewBox="0 0 240 90" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <div class="gauge-hours" aria-hidden="true"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
+          <dl class="gauge-times" id="gaugeTimes"></dl>
+          <p class="gauge-note">Times: game clock · real minutes from now</p>
+        </div>
+      </div>
+      <p class="gauge-note" id="gaugeNote"></p>
+    </section>
+
+    <div class="drop" id="drop" hidden>Drop Straumr-flowmap.json to load it</div>
+    <div class="status glass" id="status" role="status" hidden><span id="statusText"></span><button type="button" id="statusClose" aria-label="Dismiss">&times;</button></div>
+  </main>
+
+  <footer class="dock">
+    <button type="button" class="tidebtn" id="tideBtn" aria-pressed="false" title="Tide view (T)">
+      <svg viewBox="0 0 24 14" aria-hidden="true"><path d="M1 8c3-6 6-6 9 0s6 6 9 0c1-2 2-3 4-3"></path></svg>Tides <kbd>T</kbd>
+    </button>
+    <div class="time">
+      <button type="button" class="primary play" id="playBtn" aria-pressed="false" aria-label="Play the tides">
+        <svg id="playIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"></path></svg>
+      </button>
+      <div class="track">
+        <div class="curve-wrap">
+          <svg viewBox="0 0 1000 60" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <clipPath id="cTop"><rect x="0" y="0" width="1000" height="30"></rect></clipPath>
+              <clipPath id="cBot"><rect x="0" y="30" width="1000" height="30"></rect></clipPath>
+            </defs>
+            <path id="floodArea" class="flood-area" clip-path="url(#cTop)"></path>
+            <path id="ebbArea" class="ebb-area" clip-path="url(#cBot)"></path>
+            <line class="mid" x1="0" y1="30" x2="1000" y2="30"></line>
+            <path id="curveLine" class="curve-line"></path>
+            <line id="marker" class="marker" x1="0" y1="2" x2="0" y2="58"></line>
+          </svg>
+          <span class="lab f">Flood</span><span class="lab e">Ebb</span>
+        </div>
+        <input type="range" id="daySlider" min="0" max="1" step="0.001" value="0.125" aria-label="Time of day in game">
+        <div class="hours" aria-hidden="true"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
+        <div class="moonrow" id="moonRow" hidden>
+          <svg class="moon" viewBox="-10 -10 20 20" aria-hidden="true"><circle r="8" class="moon-dark"></circle><path id="moonLit" class="moon-lit"></path></svg>
+          <input type="range" id="moonSlider" min="0" max="9" step="1" value="0" aria-label="Day of the lunar month">
+          <span class="moonlabel" id="moonText"></span>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="clock" id="clock">03:00</div>
+        <div class="state" id="phaseText"></div>
+      </div>
+    </div>
+    <div class="legend">
+      <div class="head">
+        <span id="legendHead"><b>Current speed</b> (m/s)</span>
+        <div class="seg" id="speedPick" role="radiogroup" aria-label="Playback speed">
+          <label><input type="radio" name="speed" value="1"><span>Real time</span></label>
+          <label><input type="radio" name="speed" value="5" checked><span>5&times;</span></label>
+          <label><input type="radio" name="speed" value="20"><span>20&times;</span></label>
+        </div>
+      </div>
+      <div class="scale" id="speedScale">
+        <div class="ramp" id="ramp"></div>
+        <div class="ticks" id="ticks"></div>
+      </div>
+      <div class="tidekeys" id="tideKeys" hidden>
+        <span class="key" id="keyFlood"><i class="sw-flood"></i>Flood: running in</span>
+        <span class="key" id="keyEbb"><i class="sw-ebb"></i>Ebb: running out</span>
+        <span class="key" id="keyArrows">Arrows: the stream now, longer is faster</span>
+        <span class="key" id="keyLevel" hidden><i class="sw-level"></i><span id="keyLevelText">Below mean · above mean</span></span>
+      </div>
+      <div class="keys" id="mapKeys">
+        <span class="key"><i class="foam"></i>White water (rapids)</span>
+        <span class="key" id="tideKey" hidden><i class="tide"></i><span id="tideKeyText">Tidal race at full flood</span></span>
+        <span class="key" id="poolKey" hidden><i class="pool"></i>Whirlpool: spins up with its tide, still at slack</span>
+      </div>
+      <p class="note" id="speedNote"></p>
+    </div>
+  </footer>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ------------------------------------------------------------------ core (no page needed)
+  const FORMAT = 'straumr-flowmap-1';
+  const BIOMES = ['Ocean', 'Meadows', 'Black Forest', 'Swamp', 'Mountain', 'Plains', 'Mistlands', 'Ashlands', 'Deep North'];
+  const WORLD_EDGE = 10500;
+  const SQ = 256;             // a detail square's side (m)
+  const HERE = '@here';       // the atlas's name for the world the player is in
+  const WHITE = 0.3;          // white share past which water shows as foam
+  const RAMP_MAX = 3.2;       // m/s at the hot end of the speed colours
+  // Calm water reads blue to teal (most rivers run 1-2 m/s); only past ~2.5 m/s does it warm.
+  const RAMP = [
+    [0.0, [70, 98, 130]], [0.5, [72, 128, 168]], [1.0, [78, 160, 192]], [1.6, [92, 190, 202]],
+    [2.1, [132, 214, 204]], [2.6, [232, 212, 132]], [3.2, [255, 138, 92]],
+  ];
+  const BUCKETS = 32;         // particle colours: fine enough to read as continuous
+
+  function bytesFromBase64(s, label) {
+    if (typeof s !== 'string') throw new Error(`The file is missing ${label}.`);
+    let bin;
+    try { bin = atob(s); } catch (e) { throw new Error(`${label} isn't readable (broken base64).`); }
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function typedFrom(s, Type, expect, label) {
+    const bytes = bytesFromBase64(s, label);
+    if (bytes.length % Type.BYTES_PER_ELEMENT) throw new Error(`${label} has a broken length.`);
+    const arr = new Type(bytes.buffer, 0, bytes.length / Type.BYTES_PER_ELEMENT);
+    if (expect != null && arr.length !== expect) throw new Error(`${label} holds ${arr.length} values; it should hold ${expect}.`);
+    return arr;
+  }
+  function scaled(arr, k) {
+    const out = new Float32Array(arr.length);
+    for (let i = 0; i < arr.length; i++) out[i] = arr[i] * k;
+    return out;
+  }
+  function decodeGrid(g, label, fields) {
+    if (!g || !(g.n > 1) || !(g.cell > 0) || !Number.isFinite(g.origin)) throw new Error(`The ${label} grid is missing its size.`);
+    const out = { origin: g.origin, cell: g.cell, n: g.n | 0 };
+    const count = out.n * out.n;
+    for (const [key, Type, k] of fields) {
+      const raw = typedFrom(g[key], Type, count, `${label}.${key}`);
+      out[key] = k == null ? raw : scaled(raw, k);
+    }
+    return out;
+  }
+
+  function decodeFlowmap(j) {
+    if (!j || typeof j !== 'object') throw new Error("This file isn't a Straumr flow map.");
+    if (j.format !== FORMAT) {
+      throw new Error(j.format ? `This file is "${j.format}"; this viewer reads ${FORMAT} files.` : "This file isn't a Straumr flow map (it has no format tag).");
+    }
+    const s = j.settings || {};
+    const num = (v, d) => (Number.isFinite(v) ? v : d);
+    const w = {
+      demo: false,
+      atlas: false,
+      name: String(j.world || 'Unnamed world'),
+      seed: typeof j.seed === 'string' ? j.seed : '',
+      preset: typeof j.preset === 'string' ? j.preset : '',
+      riversFrom: String(j.rivers_from || ''),
+      made: String(j.made || ''),
+      day: Number.isFinite(j.day) ? ((j.day % 1) + 1) % 1 : 0.125,
+      ocean: num(j.ocean, 30),
+      you: Array.isArray(j.you) && j.you.length >= 2 && Number.isFinite(j.you[0]) && Number.isFinite(j.you[1]) ? [j.you[0], j.you[1]] : null,
+      settings: {
+        maxSpeed: num(s.maxSpeed, 3), tides: num(s.tides, 0), whiteFroude: num(s.whiteFroude, 0.45),
+        whiteFroudeFull: num(s.whiteFroudeFull, 0.9), whiteMinSpeed: num(s.whiteMinSpeed, 0.8),
+        whirlpools: num(s.whirlpools, 1), estuary: num(s.estuary, 0.6), springNeap: num(s.springNeap, 0.35),
+        tideRange: num(s.tideRange, 0.6),
+      },
+      // the lunar month the tides follow (older files have none: two plain tides a day)
+      lunar: Number.isFinite(j.moon) && num(j.monthDays, 0) > 0,
+      days: num(j.days, 0), moon: num(j.moon, 0), monthDays: num(j.monthDays, 0),
+      biomes: Array.isArray(j.biomes) && j.biomes.length ? j.biomes.map(String) : BIOMES,
+      // [x, z, core, race, tide, turn] each; older files have none
+      whirlpools: (Array.isArray(j.whirlpools) ? j.whirlpools : [])
+        .filter(p => Array.isArray(p) && p.length >= 6 && p.slice(0, 4).every(Number.isFinite) && p[2] > 0)
+        .map(p => ({ x: p[0], z: p[1], core: p[2], race: p[3], tide: p[4] >= 0 ? 1 : -1, turn: p[5] >= 0 ? 1 : -1 })),
+    };
+    w.ground = decodeGrid(j.ground, 'ground', [['height', Int16Array, null], ['biome', Uint8Array, null]]);
+    w.sea = decodeGrid(j.sea, 'sea', [['u', Int16Array, 0.01], ['w', Int16Array, 0.01]]);
+    w.tide = decodeGrid(j.tide, 'tide', [['u', Int16Array, 0.01], ['w', Int16Array, 0.01]]);
+    // how high the tide runs at each spot (share of the open sea's range) and how late it comes; newer files only
+    w.tideLevel = j.tideLevel ? decodeGrid(j.tideLevel, 'tideLevel', [['amp', Uint8Array, 1 / 255], ['lag', Uint8Array, Math.PI / 255]]) : null;
+    const r = j.rivers || {};
+    const n = Math.max(0, r.count | 0);
+    const R = { count: n };
+    if (n > 0) {
+      R.x = typedFrom(r.x, Float32Array, n, 'rivers.x');
+      R.z = typedFrom(r.z, Float32Array, n, 'rivers.z');
+      R.dx = scaled(typedFrom(r.dx, Int8Array, n, 'rivers.dx'), 1 / 127);
+      R.dz = scaled(typedFrom(r.dz, Int8Array, n, 'rivers.dz'), 1 / 127);
+      R.speed = scaled(typedFrom(r.speed, Uint16Array, n, 'rivers.speed'), 0.01);
+      R.half = scaled(typedFrom(r.half, Uint16Array, n, 'rivers.half'), 0.1);
+      R.depth = scaled(typedFrom(r.depth, Uint16Array, n, 'rivers.depth'), 0.01);
+      R.white = scaled(typedFrom(r.white, Uint8Array, n, 'rivers.white'), 1 / 255);
+      R.next = typedFrom(r.next, Int32Array, n, 'rivers.next');
+      R.river = typedFrom(r.river, Uint16Array, n, 'rivers.river');
+      // how far the tide reaches up this point (0..1); older files have none
+      R.tidal = r.tidal != null ? scaled(typedFrom(r.tidal, Uint8Array, n, 'rivers.tidal'), 1 / 255) : new Float32Array(n);
+      for (let i = 0; i < n; i++) if (R.next[i] >= n || R.next[i] === i) R.next[i] = -1;
+    } else {
+      for (const k of ['x', 'z', 'dx', 'dz', 'speed', 'half', 'depth', 'white', 'tidal']) R[k] = new Float32Array(0);
+      R.next = new Int32Array(0);
+      R.river = new Uint16Array(0);
+    }
+    w.rivers = R;
+    return prepare(w);
+  }
+
+  // One 256 m detail square from the game's atlas: 2 m ground, 8 m biomes, 4 m currents (raw cm/s kept as Int16).
+  function decodeDetail(j) {
+    if (!j || !Number.isFinite(j.wx) || !Number.isFinite(j.wz)) throw new Error('A detail square came without its position.');
+    const sub = (g, label, fields) => {
+      if (!g || !(g.n > 1) || !(g.cell > 0)) throw new Error(`Detail ${label} is missing its size.`);
+      const out = { cell: g.cell, n: g.n | 0 };
+      for (const [key, Type, optional] of fields) {
+        out[key] = optional && g[key] == null ? new Type(out.n * out.n) : typedFrom(g[key], Type, out.n * out.n, `detail ${label}.${key}`);
+      }
+      return out;
+    };
+    return {
+      wx: j.wx | 0, wz: j.wz | 0,
+      x0: Number.isFinite(j.x0) ? j.x0 : (j.wx | 0) * SQ, z0: Number.isFinite(j.z0) ? j.z0 : (j.wz | 0) * SQ, size: SQ,
+      ground: sub(j.ground, 'ground', [['height', Int16Array]]),
+      biome: sub(j.biome, 'biome', [['data', Uint8Array]]),
+      flow: sub(j.flow, 'flow', [['u', Int16Array], ['w', Int16Array], ['su', Int16Array], ['sw', Int16Array], ['depth', Uint16Array], ['wet', Uint8Array], ['tidal', Uint8Array, true]]),
+    };
+  }
+  const sqKey = (i, j) => (i + 4096) * 8192 + (j + 4096);
+  function detailIndex(g, d, x, z) {
+    const col = Math.max(0, Math.min(g.n - 1, Math.floor((x - d.x0) / g.cell)));
+    const row = Math.max(0, Math.min(g.n - 1, Math.floor((z - d.z0) / g.cell)));
+    return row * g.n + col;
+  }
+  // A 4 m flow value at a point in a square, bilinear (raw units).
+  function detailLerp(d, a, x, z) {
+    const F = d.flow, n = F.n;
+    const fx = Math.max(0, Math.min(n - 1.001, (x - d.x0) / F.cell - 0.5)), fz = Math.max(0, Math.min(n - 1.001, (z - d.z0) / F.cell - 0.5));
+    const c0 = fx | 0, r0 = fz | 0, tx = fx - c0, tz = fz - r0, i = r0 * n + c0;
+    return (a[i] * (1 - tx) + a[i + 1] * tx) * (1 - tz) + (a[i + n] * (1 - tx) + a[i + n + 1] * tx) * tz;
+  }
+  // River current and sea current at a point in a square (m/s): [ru, rw, su, sw].
+  function detailFlowAt(d, x, z, out) {
+    const F = d.flow;
+    out[0] = detailLerp(d, F.u, x, z) * 0.01; out[1] = detailLerp(d, F.w, x, z) * 0.01;
+    out[2] = detailLerp(d, F.su, x, z) * 0.01; out[3] = detailLerp(d, F.sw, x, z) * 0.01;
+    return out;
+  }
+  const detailDepthAt = (d, x, z) => detailLerp(d, d.flow.depth, x, z) * 0.01;
+  function detailCellAt(d, x, z) {
+    const gi = detailIndex(d.ground, d, x, z), bi = detailIndex(d.biome, d, x, z), F = d.flow, fi = detailIndex(F, d, x, z);
+    return {
+      h: d.ground.height[gi] / 10, biome: d.biome.data[bi], wet: F.wet[fi] === 1, depth: F.depth[fi] / 100,
+      u: F.u[fi] / 100, w: F.w[fi] / 100, su: F.su[fi] / 100, sw: F.sw[fi] / 100,
+    };
+  }
+  // How white the water runs (0..1), from its Froude number, the way Straumr decides it.
+  function whiteness(speed, depth, s) {
+    if (speed < s.whiteMinSpeed) return 0;
+    const fr = speed / Math.sqrt(9.81 * Math.max(depth, 0.5));
+    return Math.max(0, Math.min(1, (fr - s.whiteFroude) / (s.whiteFroudeFull - s.whiteFroude)));
+  }
+  const froude = (speed, depth) => speed / Math.sqrt(9.81 * Math.max(depth, 0.5));
+  // Foam: streaks along the flow (about 10 m long and 2.5 m across, finer ones on top), from smooth value noise in
+  // world coordinates so the pattern runs on across detail squares. 0..1.
+  function hash2(ix, iz) {
+    let h = (Math.imul(ix, 374761393) + Math.imul(iz, 668265263)) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+  function vnoise(x, z) {
+    const x0 = Math.floor(x), z0 = Math.floor(z);
+    let tx = x - x0, tz = z - z0;
+    tx = tx * tx * (3 - 2 * tx);
+    tz = tz * tz * (3 - 2 * tz);
+    const a = hash2(x0, z0), b = hash2(x0 + 1, z0), c = hash2(x0, z0 + 1), d = hash2(x0 + 1, z0 + 1);
+    const top = a + (b - a) * tx;
+    return top + (c + (d - c) * tx - top) * tz;
+  }
+  function foamAt(x, z, ux, uz) {
+    const along = x * ux + z * uz, across = z * ux - x * uz;
+    return 0.65 * vnoise(along / 10, across / 2.5) + 0.35 * vnoise(along / 4 + 17.3, across / 1.4 - 4.1);
+  }
+  const atlasLocal = loc => /^https?:$/.test(loc.protocol) && ['localhost', '127.0.0.1', '[::1]'].includes(loc.hostname);
+  const SEED_RE = /^[A-Za-z0-9]{1,10}$/;
+  const VALHEIM = '~valheim'; // the atlas's suffix for a seed built by Valheim's own generator instead of Riverheim's
+  const baseSeed = key => (key.endsWith(VALHEIM) ? key.slice(0, -VALHEIM.length) : key);
+  const seedParam = seed => encodeURIComponent(seed).replace(/^%40/, '@');
+  // #seed, #seed~valheim, #@here, or any of them followed by @x,z[,zoom in px per metre]
+  function parseHash(hash) {
+    const m = /^#(@here|[A-Za-z0-9]{1,10}(?:~valheim)?)(?:@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)(?:,(\d+(?:\.\d+)?))?)?$/.exec(hash || '');
+    if (!m) return null;
+    return { seed: m[1], x: m[2] != null ? parseFloat(m[2]) : null, z: m[3] != null ? parseFloat(m[3]) : null, s: m[4] != null ? parseFloat(m[4]) : null };
+  }
+
+  // Spatial index of river points: 64 m buckets, counting-sorted into flat arrays.
+  function buildRiverIndex(R) {
+    const B = 64;
+    if (!R.count) return { B, gx0: 0, gz0: 0, nx: 1, nz: 1, start: new Int32Array(2), items: new Int32Array(0) };
+    let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+    for (let i = 0; i < R.count; i++) {
+      const x = R.x[i], z = R.z[i];
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (z < z0) z0 = z; if (z > z1) z1 = z;
+    }
+    const gx0 = Math.floor(x0 / B), gz0 = Math.floor(z0 / B);
+    const nx = Math.floor(x1 / B) - gx0 + 1, nz = Math.floor(z1 / B) - gz0 + 1;
+    const start = new Int32Array(nx * nz + 1), cellOf = new Int32Array(R.count);
+    for (let i = 0; i < R.count; i++) {
+      const c = (Math.floor(R.z[i] / B) - gz0) * nx + (Math.floor(R.x[i] / B) - gx0);
+      cellOf[i] = c;
+      start[c + 1]++;
+    }
+    for (let c = 0; c < nx * nz; c++) start[c + 1] += start[c];
+    const fill = start.slice(0, nx * nz), items = new Int32Array(R.count);
+    for (let i = 0; i < R.count; i++) items[fill[cellOf[i]]++] = i;
+    return { B, gx0, gz0, nx, nz, start, items };
+  }
+  function eachRiverPoint(idx, x0, z0, x1, z1, fn) {
+    const cx0 = Math.max(0, Math.floor(x0 / idx.B) - idx.gx0), cx1 = Math.min(idx.nx - 1, Math.floor(x1 / idx.B) - idx.gx0);
+    const cz0 = Math.max(0, Math.floor(z0 / idx.B) - idx.gz0), cz1 = Math.min(idx.nz - 1, Math.floor(z1 / idx.B) - idx.gz0);
+    for (let cz = cz0; cz <= cz1; cz++)
+      for (let cx = cx0; cx <= cx1; cx++) {
+        const c = cz * idx.nx + cx;
+        for (let k = idx.start[c]; k < idx.start[c + 1]; k++) fn(idx.items[k]);
+      }
+  }
+  function nearestRiver(w, x, z, radius) {
+    const R = w.rivers;
+    let best = -1, bd = radius * radius;
+    eachRiverPoint(w.index, x - radius, z - radius, x + radius, z + radius, i => {
+      const dx = R.x[i] - x, dz = R.z[i] - z, d = dx * dx + dz * dz;
+      if (d < bd) { bd = d; best = i; }
+    });
+    return best;
+  }
+  // Where each river ends without a next point: the nearest point of another river within 40 m (a tributary's
+  // confluence), so particles carry on into the parent river. Points that flow on are preferred.
+  function computeJoins(w) {
+    const R = w.rivers, join = new Int32Array(R.count).fill(-1);
+    for (let i = 0; i < R.count; i++) {
+      if (R.next[i] >= 0) continue;
+      let best = -1, bd = 40 * 40 + 1;
+      eachRiverPoint(w.index, R.x[i] - 40, R.z[i] - 40, R.x[i] + 40, R.z[i] + 40, k => {
+        if (R.river[k] === R.river[i] || R.next[k] < 0) return;
+        const dx = R.x[k] - R.x[i], dz = R.z[k] - R.z[i], d = dx * dx + dz * dz;
+        if (d < bd) { bd = d; best = k; }
+      });
+      join[i] = best;
+    }
+    return join;
+  }
+  function prepare(w) {
+    w.whirlpools = w.whirlpools || [];
+    // the moment of export in game days: "days" as given (a whole count gets the time of day added)
+    w.D0 = w.lunar ? (w.days % 1 === 0 ? w.days + w.day : w.days) : w.day;
+    w.index = buildRiverIndex(w.rivers);
+    w.join = computeJoins(w);
+    let maxTide = 0;
+    for (let i = 0; i < w.tide.u.length; i++) {
+      const v = Math.hypot(w.tide.u[i], w.tide.w[i]);
+      if (v > maxTide) maxTide = v;
+    }
+    w.maxTide = maxTide;
+    const ids = new Set();
+    for (let i = 0; i < w.rivers.count; i++) ids.add(w.rivers.river[i]);
+    w.riverCount = ids.size;
+    const G = w.ground, span = G.n * G.cell;
+    w.extent = Math.min(span, 2 * WORLD_EDGE);
+    w.centre = [G.origin + span / 2, G.origin + span / 2];
+    return w;
+  }
+
+  // Grids: cell (col,row) is centred at origin + (col + 0.5) * cell; row 0 is the south edge.
+  function bilinear(g, a, x, z) {
+    const fx = (x - g.origin) / g.cell - 0.5, fz = (z - g.origin) / g.cell - 0.5;
+    const c0 = Math.floor(fx), r0 = Math.floor(fz), n = g.n;
+    if (c0 < 0 || r0 < 0 || c0 >= n - 1 || r0 >= n - 1) return 0;
+    const tx = fx - c0, tz = fz - r0, i = r0 * n + c0;
+    return (a[i] * (1 - tx) + a[i + 1] * tx) * (1 - tz) + (a[i + n] * (1 - tx) + a[i + n + 1] * tx) * tz;
+  }
+  function vecAt(g, x, z, out) {
+    out[0] = bilinear(g, g.u, x, z);
+    out[1] = bilinear(g, g.w, x, z);
+    return out;
+  }
+  const tidePhase = day => Math.sin(4 * Math.PI * day);      // +1 full flood, -1 full ebb, two tides a day
+  const frac = v => v - Math.floor(v);
+  // The tide at a moment D (game days since the world began): its phase (+1 full flood .. -1 full ebb), its strength
+  // (spring tides at full and new moon, neaps at half moon) and where the moon is (0 full, 0.5 new). With a lunar
+  // month, high water comes a little later each day and back to the same clock time each half month.
+  function tideAt(w, D) {
+    if (!w.lunar) {
+      const angle = 4 * Math.PI * frac(D);
+      return { phase: Math.sin(angle), strength: 1, moon: null, angle: angle % (2 * Math.PI), rate: 4 * Math.PI };
+    }
+    const moon = frac(w.moon + (D - w.days) / w.monthDays);
+    const angle = frac((D - moon) / 0.5) * 2 * Math.PI;
+    return {
+      phase: Math.sin(angle), strength: 1 + w.settings.springNeap * Math.cos(4 * Math.PI * moon), moon, angle,
+      rate: 4 * Math.PI * (1 - 1 / w.monthDays), // radians of tide a game day
+    };
+  }
+  // The water level at a spot now (m above mean): the open sea's tide, scaled by how much of its range reaches here
+  // and delayed by how late it comes. Null when the file has no tide heights.
+  function levelAt(w, x, z, t) {
+    const L = w.tideLevel;
+    if (!L) return null;
+    const amp = bilinear(L, L.amp, x, z), lag = bilinear(L, L.lag, x, z);
+    return { amp, lag, level: -w.settings.tideRange * t.strength * amp * Math.cos(t.angle - lag) };
+  }
+  // Spring or neap, as the game says it ('' in between).
+  function tideKind(w, strength) {
+    const sn = w.settings.springNeap;
+    if (!w.lunar || sn <= 0) return '';
+    return strength > 1 + 0.6 * sn ? 'spring' : strength < 1 - 0.6 * sn ? 'neap' : '';
+  }
+  function seaNow(w, x, z, phase, out) {                       // sea current plus the tide at this phase (m/s)
+    const su = bilinear(w.sea, w.sea.u, x, z), sw = bilinear(w.sea, w.sea.w, x, z);
+    out[0] = su + phase * bilinear(w.tide, w.tide.u, x, z);
+    out[1] = sw + phase * bilinear(w.tide, w.tide.w, x, z);
+    return out;
+  }
+  // A tidal whirlpool turns only on its own tide (the flood or the ebb), strongest at full flow, still at slack.
+  const poolOn = (p, phase) => Math.max(0, p.tide * phase) ** 2;
+  const poolPeak = (p, st, phase, strength = 1) => st.whirlpools * st.tides * p.race * poolOn(p, phase) * strength;
+  // Adds the pools' water at a point (m/s): a Lamb-Oseen vortex, fastest at the core's edge, faded out between three
+  // and four core radii, with a fifth of its speed drawn inward.
+  function addWhirlpools(pools, st, phase, x, z, out, strength = 1) {
+    for (const p of pools) {
+      const dx = x - p.x, dz = z - p.z, r2 = dx * dx + dz * dz, reach = 4 * p.core;
+      if (r2 >= reach * reach) continue;
+      const vmax = poolPeak(p, st, phase, strength);
+      if (vmax <= 0) continue;
+      const r = Math.sqrt(r2) || 1e-6;
+      let v = vmax * 1.398 * (p.core / r) * (1 - Math.exp((-1.2564 * r2) / (p.core * p.core)));
+      if (r > 3 * p.core) v *= (reach - r) / p.core;
+      out[0] += (v / r) * (-dz * p.turn - 0.2 * dx);
+      out[1] += (v / r) * (dx * p.turn - 0.2 * dz);
+    }
+    return out;
+  }
+  // How much of the passing stream a pool traps at a point (0..1, the strongest pool's): its water goes round
+  // with the pool instead of running through. The water there = stream * (1 - hold) + the pools' turn.
+  function poolHold(pools, st, phase, x, z, strength = 1) {
+    const k = Math.max(0, Math.min(1, st.whirlpools));
+    let hold = 0;
+    for (const p of pools) {
+      const dx = x - p.x, dz = z - p.z, r2 = dx * dx + dz * dz, c2 = p.core * p.core;
+      if (r2 > 36 * c2) continue;
+      const on = poolOn(p, phase);
+      if (on <= 0) continue;
+      hold = Math.max(hold, Math.min(1, k * on * strength * Math.exp(-r2 / (2.25 * c2))));
+    }
+    return hold;
+  }
+  function groundAt(w, x, z) {
+    const G = w.ground, col = Math.floor((x - G.origin) / G.cell), row = Math.floor((z - G.origin) / G.cell);
+    if (col < 0 || row < 0 || col >= G.n || row >= G.n || x * x + z * z > WORLD_EDGE * WORLD_EDGE) return null;
+    const i = row * G.n + col;
+    return { h: G.height[i] / 10, biome: w.biomes[G.biome[i]] || 'Unknown' };
+  }
+  function compass(u, v) {
+    const k = ((Math.round(Math.atan2(u, v) / (Math.PI / 4)) % 8) + 8) % 8;
+    return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][k];
+  }
+  function speedBucket(v) { return Math.max(0, Math.min(BUCKETS - 1, Math.floor((v / RAMP_MAX) * BUCKETS))); }
+  function rampRGB(v) {
+    if (v <= RAMP[0][0]) return RAMP[0][1];
+    for (let k = 1; k < RAMP.length; k++) {
+      if (v <= RAMP[k][0]) {
+        const [a, ca] = RAMP[k - 1], [b, cb] = RAMP[k], t = (v - a) / (b - a);
+        return [0, 1, 2].map(c => Math.round(ca[c] + (cb[c] - ca[c]) * t));
+      }
+    }
+    return RAMP[RAMP.length - 1][1];
+  }
+
+  // A river particle sits at point i, a fraction t of the way to the next point downstream; it moves dist metres
+  // down the chain, crossing into the parent river at a confluence. False when it has run out of river.
+  function advanceRiver(w, ri, rt, p, dist) {
+    const R = w.rivers;
+    let i = ri[p], t = rt[p];
+    for (let guard = 0; guard < 600; guard++) {
+      const j = R.next[i];
+      if (j < 0) {
+        const k = w.join[i];
+        if (k < 0) return false;
+        i = k; t = 0;
+        continue;
+      }
+      const seg = Math.hypot(R.x[j] - R.x[i], R.z[j] - R.z[i]) || 1;
+      const remain = (1 - t) * seg;
+      if (dist < remain) { t += dist / seg; break; }
+      dist -= remain; i = j; t = 0;
+    }
+    ri[p] = i; rt[p] = t;
+    return true;
+  }
+  // ...and back up it, when the tide pushes up a river mouth: toward the source (points run mouth first, so the
+  // point upstream of i is i + 1 on the same river). False past the source.
+  function retreatRiver(w, ri, rt, p, dist) {
+    const R = w.rivers;
+    let i = ri[p], t = rt[p];
+    for (let guard = 0; guard < 600; guard++) {
+      const j = R.next[i];
+      const seg = j >= 0 ? Math.hypot(R.x[j] - R.x[i], R.z[j] - R.z[i]) || 1 : 1;
+      const back = j >= 0 ? t * seg : 0;
+      if (dist <= back) { t -= dist / seg; break; }
+      dist -= back;
+      const up = i + 1;
+      if (up >= R.count || R.river[up] !== R.river[i] || R.next[up] !== i) return false;
+      i = up; t = 1;
+    }
+    ri[p] = i; rt[p] = t;
+    return true;
+  }
+  // The tide's push up a river where it reaches (m/s, + = upstream on the flood, - = seaward on the ebb).
+  const tidePush = (st, tidal, phase, strength = 1) => st.tides * st.estuary * tidal * phase * strength;
+  // Position across the channel: o from -1 (one bank) to 1 (the other).
+  function riverPos(w, i, t, o, out) {
+    const R = w.rivers, j = R.next[i] >= 0 ? R.next[i] : i;
+    const x = R.x[i] + (R.x[j] - R.x[i]) * t, z = R.z[i] + (R.z[j] - R.z[i]) * t;
+    const half = (R.half[i] + (R.half[j] - R.half[i]) * t) * 0.9;
+    out[0] = x - R.dz[i] * o * half;
+    out[1] = z + R.dx[i] * o * half;
+    return out;
+  }
+  function riverAt(w, i, t, f) {
+    const R = w.rivers, j = R.next[i] >= 0 ? R.next[i] : i;
+    return R[f][i] + (R[f][j] - R[f][i]) * t;
+  }
+
+  // A made-up island for the first view: a river with rapids and a tributary, a gyre at sea, a tidal strait.
+  function makeDemo() {
+    const coast = (x, z) => 40 * Math.sin(x / 310) + 30 * Math.sin(z / 260 + 1.3) + 20 * Math.sin((x + z) / 170);
+    const H = (x, z) => {
+      const c = coast(x, z);
+      const d1 = Math.hypot(x + 900, z - 300) + c;
+      const h1 = 70 * (1 - (d1 / 1500) ** 2) + 150 * Math.exp(-((x + 1150) ** 2 + (z - 750) ** 2) / 520 ** 2);
+      const d2 = Math.hypot(x - 1750, (z + 200) * 1.25) + 0.6 * c;
+      const h2 = 38 * (1 - (d2 / 800) ** 2);
+      const h = Math.max(h1, h2);
+      return h < 0 ? Math.max(-55, h * 0.6) : h;
+    };
+    const biomeOf = (x, z, h) => {
+      if (h < 0) return 0;
+      if (x > 900) return 5;
+      if (h > 110) return 4;
+      if (Math.hypot(x + 250, z + 650) < 420 && h < 30) return 3;
+      if (h > 48) return 2;
+      return 1;
+    };
+    const smooth = (a, b, v) => { const t = Math.max(0, Math.min(1, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+    const grid = (origin, cell, n) => ({ origin, cell, n });
+    const G = grid(-3200, 32, 200);
+    G.height = new Int16Array(G.n * G.n);
+    G.biome = new Uint8Array(G.n * G.n);
+    for (let row = 0; row < G.n; row++)
+      for (let col = 0; col < G.n; col++) {
+        const x = G.origin + (col + 0.5) * G.cell, z = G.origin + (row + 0.5) * G.cell, h = H(x, z);
+        G.height[row * G.n + col] = Math.round(h * 10);
+        G.biome[row * G.n + col] = biomeOf(x, z, h);
+      }
+    const S = grid(-3200, 48, 134);
+    S.u = new Float32Array(S.n * S.n); S.w = new Float32Array(S.n * S.n);
+    for (let row = 0; row < S.n; row++)
+      for (let col = 0; col < S.n; col++) {
+        const x = S.origin + (col + 0.5) * S.cell, z = S.origin + (row + 0.5) * S.cell, h = H(x, z);
+        if (h > -1) continue;
+        const open = smooth(2, 26, -h), rx = x - 300, rz = z - 150, r = Math.hypot(rx, rz) || 1;
+        const sp = Math.min(1.15, 0.2 + r / 2600) * open;
+        S.u[row * S.n + col] = (-rz / r) * sp;
+        S.w[row * S.n + col] = (rx / r) * sp;
+      }
+    const T = grid(-3200, 96, 67);
+    T.u = new Float32Array(T.n * T.n); T.w = new Float32Array(T.n * T.n);
+    for (let row = 0; row < T.n; row++)
+      for (let col = 0; col < T.n; col++) {
+        const x = T.origin + (col + 0.5) * T.cell, z = T.origin + (row + 0.5) * T.cell;
+        if (H(x, z) > -1) continue;
+        const strait = Math.exp(-(((x - 790) / 240) ** 2)) * Math.exp(-(((z - 60) / 720) ** 2));
+        T.u[row * T.n + col] = 0.25 * strait * Math.sin(z / 300);
+        T.w[row * T.n + col] = 1.5 * strait + 0.05;
+      }
+    // The sea north of the strait fills late and not so high, through the narrows.
+    const TL = grid(-3200, 96, 67);
+    TL.amp = new Float32Array(TL.n * TL.n); TL.lag = new Float32Array(TL.n * TL.n);
+    for (let row = 0; row < TL.n; row++)
+      for (let col = 0; col < TL.n; col++) {
+        const x = TL.origin + (col + 0.5) * TL.cell, z = TL.origin + (row + 0.5) * TL.cell;
+        if (H(x, z) > -1) continue;
+        const behind = x > 300 && x < 1500 && z > 500 ? Math.min(1, (z - 500) / 1200) : 0;
+        TL.amp[row * TL.n + col] = 1 - 0.35 * behind;
+        TL.lag[row * TL.n + col] = 1.3 * behind;
+      }
+    const settings = { maxSpeed: 3, tides: 1.5, whiteFroude: 0.45, whiteFroudeFull: 0.9, whiteMinSpeed: 0.8, whirlpools: 1, estuary: 0.6, springNeap: 0.35, tideRange: 0.6 };
+    const pts = [];
+    const addRiver = (id, ax, az, bx, bz, profile, amp, wave) => {
+      const L = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / L, uz = (bz - az) / L, start = pts.length;
+      const count = Math.floor(L / 8) + 1;
+      for (let k = 0; k < count; k++) {
+        const s = k * 8, f = s / L, off = amp * Math.sin(s / wave) * Math.sin(Math.PI * f), p = profile(f, s);
+        pts.push({ x: ax + ux * s - uz * off, z: az + uz * s + ux * off, speed: p.speed, half: p.half, depth: p.depth,
+          white: whiteness(p.speed, p.depth, settings), tidal: p.tidal || 0, next: k > 0 ? start + k - 1 : -1, river: id });
+      }
+      for (let k = 0; k < count; k++) {
+        const a = pts[start + Math.max(0, k - 1)], b = pts[start + Math.min(count - 1, k + 1)];
+        const dx = a.x - b.x, dz = a.z - b.z, l = Math.hypot(dx, dz) || 1;
+        pts[start + k].dx = dx / l; pts[start + k].dz = dz / l;
+      }
+      return start;
+    };
+    const main = addRiver(0, -1840, -950, -1000, 560, (f, s) => {
+      let speed, half = 3 + 22 * Math.pow(1 - f, 1.2), depth = 0.5 + 2.8 * (1 - f);
+      if (f < 0.45) speed = 0.55 + 0.6 * f;
+      else if (f < 0.62) { speed = 2.2 + 0.35 * Math.sin(f * 60); half *= 0.7; depth *= 0.45; }
+      else speed = 1.05 - 0.4 * (f - 0.62) / 0.38;
+      return { speed, half, depth, tidal: Math.max(0, 1 - s / 320) }; // the tide reaches 320 m up from the mouth
+    }, 70, 180);
+    const joinAt = pts[main + 70];
+    addRiver(1, joinAt.x, joinAt.z, -2000, 250, f => ({ speed: 0.7 + 0.3 * f, half: 6 - 4 * f, depth: 1.1 - 0.7 * f }), 35, 120);
+    const n = pts.length, R = { count: n };
+    for (const k of ['x', 'z', 'dx', 'dz', 'speed', 'half', 'depth', 'white', 'tidal']) R[k] = Float32Array.from(pts, p => p[k]);
+    R.next = Int32Array.from(pts, p => p.next);
+    R.river = Uint16Array.from(pts, p => p.river);
+    return prepare({
+      demo: true, atlas: false, name: 'Sample island', seed: '', preset: '', riversFrom: '', made: '', day: 0.125, ocean: 30, you: [-1700, -880],
+      lunar: true, days: 0, moon: 0, monthDays: 10, // a full moon: spring tides
+      settings, biomes: BIOMES, ground: G, sea: S, tide: T, tideLevel: TL, rivers: R,
+      // off each end of the strait: the north one turns on the flood, the south one on the ebb
+      whirlpools: [{ x: 800, z: 800, core: 25, race: 1, tide: 1, turn: 1 }, { x: 780, z: -700, core: 20, race: 0.8, tide: -1, turn: -1 }],
+    });
+  }
+
+  const Core = {
+    decodeFlowmap, decodeDetail, detailFlowAt, detailDepthAt, detailCellAt, whiteness, froude, atlasLocal, SEED_RE, seedParam, parseHash, sqKey, HERE,
+    VALHEIM, baseSeed, poolOn, poolPeak, addWhirlpools, poolHold, retreatRiver, tidePush, foamAt, detailLerp, tideAt, tideKind, levelAt,
+    makeDemo, groundAt, vecAt, seaNow, tidePhase, nearestRiver, advanceRiver, riverPos, riverAt, compass, speedBucket, rampRGB, bilinear,
+  };
+  globalThis.StraumrCore = Core;
+  if (typeof document === 'undefined') return;
+
+  // ------------------------------------------------------------------ the page
+  const $ = id => document.getElementById(id);
+  const stage = $('stage'), base = $('base'), marks = $('marks'), flow = $('flow');
+  const bctx = base.getContext('2d'), mctx = marks.getContext('2d'), fctx = flow.getContext('2d');
+  const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const MAP_PX_PER_MPS = 26;  // far out, particles keep this on-screen pace (px/s per m/s) so the map still moves
+  const GAME_DAY = 1800;      // real seconds in a Valheim day
+  const MAX_FREE = 6000, MAX_RIV = 5000;
+  const SMOOTH_S = 0.16;      // px per metre past which the 32 m map is redrawn smooth (a cell over ~5 px)
+  const HINT_S = 0.25;        // ...and a file's map hints at the atlas for real detail
+  const DETAIL_MIN_S = 0.45;  // px per metre before detail loads: a 32 m map cell ~14 px, a 256 m square ~115 px
+  const DETAIL_MAX = 300, DETAIL_CONC = 4, DETAIL_CAP = 220, DETAIL_RETRY_MS = 8000;
+  const VOID = '#05090d', CHANNEL = 'rgb(63, 134, 163)', FOAM = 'rgba(240, 248, 251, 0.7)';
+  const COLORS = Array.from({ length: BUCKETS }, (_, b) => `rgb(${rampRGB(((b + 0.5) / BUCKETS) * RAMP_MAX).join(',')})`);
+  const WHITE_B = BUCKETS;
+
+  const S = {
+    w: null, W: 0, H: 0, dpr: 1, cx: 0, cz: 0, s: 0.1, minS: 0.01, maxS: 6, fitted: false,
+    day: 0.125, D: 0.125, tide: { phase: 0, strength: 1, moon: null, angle: 0, rate: 4 * Math.PI }, curveKey: '',
+    tideView: false, tideMode: 'currents', speedBeforeTide: null, gaugeKey: '',
+    playing: false, speed: 5, animate: !reduceMotion, dirty: true, viewChanged: true, interacting: false, settle: 0,
+    layers: { rivers: true, sea: true, tide: false, white: true, pools: true }, detailOn: false,
+    activePools: [], poolAngle: new Float32Array(0),
+    groundImg: null, tideImg: null, gShade: null, gLand: null,
+    vis: new Int32Array(1), visN: 0, dvis: new Int32Array(1), dvisN: 0, hover: null,
+  };
+  // Free particles drift through whatever field is there (the sea, or a detail square's 4 m currents); river
+  // particles ride the river points where no detail square is loaded.
+  const free = { n: 0, x: new Float32Array(MAX_FREE), z: new Float32Array(MAX_FREE), age: new Float32Array(MAX_FREE), life: new Float32Array(MAX_FREE), sx: new Float32Array(MAX_FREE), sy: new Float32Array(MAX_FREE) };
+  const riv = { n: 0, i: new Int32Array(MAX_RIV), t: new Float32Array(MAX_RIV), o: new Float32Array(MAX_RIV), age: new Float32Array(MAX_RIV), life: new Float32Array(MAX_RIV), sx: new Float32Array(MAX_RIV), sy: new Float32Array(MAX_RIV) };
+  const segSea = Array.from({ length: BUCKETS }, () => ({ a: new Float32Array(MAX_FREE * 4), n: 0 }));
+  const segRiv = Array.from({ length: BUCKETS + 1 }, () => ({ a: new Float32Array((MAX_RIV + MAX_FREE) * 4), n: 0 }));
+  const v2 = [0, 0], p2 = [0, 0], q4 = [0, 0, 0, 0], m4 = [0, 0, 0, 0], f4 = [0, 0, 0, 0];
+
+  const ATLAS = { on: false, info: null, token: 0, busy: false, closed: false, twoWorlds: false, pendingView: null };
+  const DETAIL = { seed: '', stale: false, cache: new Map(), inflight: new Map(), failed: new Map(), wanted: [], wantedSet: new Set() };
+  const SM = { canvas: null, key: '', world: null };
+
+  const toScreenX = x => S.W / 2 + (x - S.cx) * S.s;
+  const toScreenY = z => S.H / 2 - (z - S.cz) * S.s;
+  const toWorld = (px, py) => [S.cx + (px - S.W / 2) / S.s, S.cz - (py - S.H / 2) / S.s];
+  const markDirty = (view = true) => { S.dirty = true; if (view) S.viewChanged = true; };
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const detailAt = (x, z) => (S.detailOn ? DETAIL.cache.get(sqKey(Math.floor(x / SQ), Math.floor(z / SQ))) : undefined);
+  function seedLabel(seed, capital) {
+    if (seed.endsWith(VALHEIM)) return `${baseSeed(seed)} (Valheim world)`;
+    if (seed !== HERE) return seed;
+    const name = ATLAS.info && ATLAS.info.here;
+    const text = `this world${name ? ` (${name})` : ''}`;
+    return capital ? text[0].toUpperCase() + text.slice(1) : text;
+  }
+
+  // ---- pre-rendered layers
+  const BIOME_RGB = [[120, 116, 96], [104, 136, 64], [52, 82, 48], [92, 76, 54], [196, 202, 208], [190, 160, 94], [104, 96, 118], [128, 58, 40], [222, 232, 240]];
+  const SAND = [168, 158, 118], SHALLOW = [46, 104, 124], DEEP = [11, 29, 46], SPRAY = [238, 246, 250];
+  const LIGHT = (() => { const L = [-1, 1.4, 1], l = Math.hypot(...L); return [L[0] / l, L[1] / l, L[2] / l]; })();
+  const mix = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
+  function waterRGB(depth) {
+    const t = Math.min(1, Math.max(0, depth) / 40), k = t * t * (3 - 2 * t);
+    return mix(SHALLOW, DEEP, k);
+  }
+  function landRGB(biome, h) {
+    const rgb = BIOME_RGB[biome] || BIOME_RGB[0];
+    return h < 1.2 && biome !== 3 ? mix(rgb, SAND, 0.45) : rgb;
+  }
+  // Light from the north-west, high: 1 on flat ground.
+  function hillshade(hx, hz) {
+    return (-hx * LIGHT[0] + LIGHT[1] - hz * LIGHT[2]) / Math.hypot(hx, 1, hz) / LIGHT[1];
+  }
+  function put(d, o, rgb, shade) {
+    shade = Math.max(0.35, Math.min(1.4, shade));
+    d[o] = Math.min(255, rgb[0] * shade); d[o + 1] = Math.min(255, rgb[1] * shade); d[o + 2] = Math.min(255, rgb[2] * shade); d[o + 3] = 255;
+  }
+  // The whole map at 32 m (one pixel a cell), plus each cell's shade and land colour for the smooth close-up.
+  function renderGround(w) {
+    const G = w.ground, n = G.n, c = document.createElement('canvas');
+    c.width = n; c.height = n;
+    const ctx = c.getContext('2d'), img = ctx.createImageData(n, n), d = img.data;
+    const ex = 2.2, hgt = G.height, shades = new Float32Array(n * n), land = new Uint8Array(n * n * 3);
+    for (let row = 0; row < n; row++) {
+      const z = G.origin + (row + 0.5) * G.cell, rN = Math.min(row + 1, n - 1) * n, rS = Math.max(row - 1, 0) * n;
+      for (let col = 0; col < n; col++) {
+        const x = G.origin + (col + 0.5) * G.cell, i = row * n + col, o = ((n - 1 - row) * n + col) * 4;
+        const h = hgt[i] / 10;
+        const hx = ((hgt[row * n + Math.min(col + 1, n - 1)] - hgt[row * n + Math.max(col - 1, 0)]) / 10 / (2 * G.cell)) * ex;
+        const hz = ((hgt[rN + col] - hgt[rS + col]) / 10 / (2 * G.cell)) * ex;
+        const shade = hillshade(hx, hz), lc = landRGB(G.biome[i], h);
+        shades[i] = shade;
+        land[i * 3] = lc[0]; land[i * 3 + 1] = lc[1]; land[i * 3 + 2] = lc[2];
+        if (x * x + z * z > WORLD_EDGE * WORLD_EDGE) { d[o + 3] = 0; continue; }
+        if (h < 0) put(d, o, waterRGB(-h), 0.88 + 0.12 * shade);
+        else put(d, o, lc, shade * (1 + Math.min(h, 200) / 900));
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    S.gShade = shades;
+    S.gLand = land;
+    return c;
+  }
+  // Close in, the 32 m map redrawn smooth for the view: height, shade and land colour blended between cells, so
+  // coasts curve and slopes shade softly instead of showing blocks. Cached per view.
+  function smoothBase() {
+    const w = S.w, G = w.ground, n = G.n, step = 2;
+    const key = `${S.cx}|${S.cz}|${S.s}|${S.W}|${S.H}`;
+    if (SM.canvas && SM.key === key && SM.world === w) return SM.canvas;
+    const ow = Math.max(1, Math.ceil(S.W / step)), oh = Math.max(1, Math.ceil(S.H / step));
+    if (!SM.canvas) SM.canvas = document.createElement('canvas');
+    if (SM.canvas.width !== ow || SM.canvas.height !== oh) { SM.canvas.width = ow; SM.canvas.height = oh; }
+    const ctx = SM.canvas.getContext('2d'), img = ctx.createImageData(ow, oh), d = img.data;
+    const H = G.height, sh = S.gShade, L = S.gLand, e2 = WORLD_EDGE * WORLD_EDGE;
+    for (let py = 0; py < oh; py++) {
+      const z = S.cz - ((py + 0.5) * step - S.H / 2) / S.s;
+      const fz = Math.max(0, Math.min(n - 1.001, (z - G.origin) / G.cell - 0.5)), r0 = fz | 0, tz = fz - r0;
+      for (let px = 0; px < ow; px++) {
+        const x = S.cx + ((px + 0.5) * step - S.W / 2) / S.s;
+        if (x * x + z * z > e2) continue; // stays transparent
+        const fx = Math.max(0, Math.min(n - 1.001, (x - G.origin) / G.cell - 0.5)), c0 = fx | 0, tx = fx - c0;
+        const i = r0 * n + c0, a = (1 - tx) * (1 - tz), b = tx * (1 - tz), c = (1 - tx) * tz, e = tx * tz;
+        const h = (H[i] * a + H[i + 1] * b + H[i + n] * c + H[i + n + 1] * e) / 10;
+        let s = sh[i] * a + sh[i + 1] * b + sh[i + n] * c + sh[i + n + 1] * e, r, g, bl;
+        if (h < 0) {
+          const t = Math.min(1, -h / 40), k = t * t * (3 - 2 * t);
+          r = SHALLOW[0] + (DEEP[0] - SHALLOW[0]) * k; g = SHALLOW[1] + (DEEP[1] - SHALLOW[1]) * k; bl = SHALLOW[2] + (DEEP[2] - SHALLOW[2]) * k;
+          s = 0.88 + 0.12 * s;
+        } else {
+          const i3 = i * 3, j3 = i3 + 3, k3 = (i + n) * 3, l3 = k3 + 3;
+          r = L[i3] * a + L[j3] * b + L[k3] * c + L[l3] * e;
+          g = L[i3 + 1] * a + L[j3 + 1] * b + L[k3 + 1] * c + L[l3 + 1] * e;
+          bl = L[i3 + 2] * a + L[j3 + 2] * b + L[k3 + 2] * c + L[l3 + 2] * e;
+          s *= 1 + Math.min(h, 200) / 900;
+        }
+        s = Math.max(0.35, Math.min(1.4, s));
+        const o = (py * ow + px) * 4;
+        d[o] = r * s; d[o + 1] = g * s; d[o + 2] = bl * s; d[o + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    SM.key = key;
+    SM.world = w;
+    return SM.canvas;
+  }
+  // A detail square: 2 m hill-shaded ground, biome colours blended from its 8 m grid, water by depth, and its
+  // currents blended from the 4 m grid into a translucent tint by speed, foam only where the Froude number makes
+  // the water white. Its edges are shaded with the neighbouring squares' ground (or the map's, until they come), so
+  // the squares meet without seams.
+  function renderDetail(dq, w) {
+    const G = dq.ground, n = G.n, B = dq.biome, F = dq.flow, fn = F.n, st = w.settings, hgt = G.height;
+    const near = (di, dj) => {
+      const q = DETAIL.cache.get(sqKey(dq.wx + di, dq.wz + dj));
+      return q && q.ground.n === n ? q.ground.height : null;
+    };
+    const east = near(1, 0), west = near(-1, 0), north = near(0, 1), south = near(0, -1);
+    const past = (col, row) => { // dm, one cell beyond the square's edge
+      if (col >= n && east) return east[row * n];
+      if (col < 0 && west) return west[row * n + n - 1];
+      if (row >= n && north) return north[col];
+      if (row < 0 && south) return south[(n - 1) * n + col];
+      return bilinear(w.ground, w.ground.height, dq.x0 + (col + 0.5) * G.cell, dq.z0 + (row + 0.5) * G.cell);
+    };
+    const c = document.createElement('canvas');
+    c.width = n; c.height = n;
+    const ctx = c.getContext('2d'), img = ctx.createImageData(n, n), d = img.data, ex = 1.2;
+    for (let row = 0; row < n; row++) {
+      const bfz = Math.max(0, Math.min(B.n - 1.001, ((row + 0.5) * G.cell) / B.cell - 0.5)), br = bfz | 0, btz = bfz - br;
+      const ffz = Math.max(0, Math.min(fn - 1.001, ((row + 0.5) * G.cell) / F.cell - 0.5)), fr = ffz | 0, ftz = ffz - fr;
+      for (let col = 0; col < n; col++) {
+        const i = row * n + col, o = ((n - 1 - row) * n + col) * 4, h = hgt[i] / 10;
+        const hE = col + 1 < n ? hgt[i + 1] : past(n, row), hW = col > 0 ? hgt[i - 1] : past(-1, row);
+        const hN = row + 1 < n ? hgt[i + n] : past(col, n), hS = row > 0 ? hgt[i - n] : past(col, -1);
+        const shade = hillshade(((hE - hW) / 10 / (2 * G.cell)) * ex, ((hN - hS) / 10 / (2 * G.cell)) * ex);
+        // the 4 m cells round this 2 m one, blended
+        const ffx = Math.max(0, Math.min(fn - 1.001, ((col + 0.5) * G.cell) / F.cell - 0.5)), fc = ffx | 0, ftx = ffx - fc, f = fr * fn + fc;
+        const a = (1 - ftx) * (1 - ftz), b = ftx * (1 - ftz), e = (1 - ftx) * ftz, g = ftx * ftz;
+        const wet = F.wet[f] * a + F.wet[f + 1] * b + F.wet[f + fn] * e + F.wet[f + fn + 1] * g;
+        // The 2 m ground draws the shore; the coarser wet flag only adds water standing above sea level.
+        if (h < 0 || (wet > 0.5 && h > 1)) {
+          const fdepth = (F.depth[f] * a + F.depth[f + 1] * b + F.depth[f + fn] * e + F.depth[f + fn + 1] * g) / 100;
+          const u = F.u[f] * a + F.u[f + 1] * b + F.u[f + fn] * e + F.u[f + fn + 1] * g;
+          const v = F.w[f] * a + F.w[f + 1] * b + F.w[f + fn] * e + F.w[f + fn + 1] * g;
+          const depth = h < 0 ? -h : fdepth, sp = Math.hypot(u, v) / 100;
+          let rgb = waterRGB(depth);
+          if (sp > 0.05) {
+            rgb = mix(rgb, rampRGB(sp), Math.min(0.5, 0.12 + sp * 0.16));
+            const wh = whiteness(sp, fdepth > 0 ? fdepth : depth, st);
+            if (wh > 0.05) {
+              // foam as streaks along the flow, more of them the whiter the water: never a solid fill
+              const fx = dq.x0 + (col + 0.5) * G.cell, fz = dq.z0 + (row + 0.5) * G.cell;
+              const cover = Math.max(0, Math.min(1, (foamAt(fx, fz, u / (sp * 100), v / (sp * 100)) - (1 - 0.75 * wh)) / 0.15));
+              if (cover > 0) rgb = mix(rgb, SPRAY, cover * (0.45 + 0.4 * wh));
+            }
+          }
+          put(d, o, rgb, 0.9 + 0.1 * shade);
+        } else {
+          // biome colours blended between the 8 m cells, so biome edges and beaches don't step
+          const bfx = Math.max(0, Math.min(B.n - 1.001, ((col + 0.5) * G.cell) / B.cell - 0.5)), bc = bfx | 0, btx = bfx - bc, b0 = br * B.n + bc;
+          const c00 = landRGB(B.data[b0], h), c10 = landRGB(B.data[b0 + 1], h), c01 = landRGB(B.data[b0 + B.n], h), c11 = landRGB(B.data[b0 + B.n + 1], h);
+          put(d, o, mix(mix(c00, c10, btx), mix(c01, c11, btx), btz), shade * (1 + Math.min(h, 200) / 900));
+        }
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    return c;
+  }
+  const TIDE_RAMP = [[0, [80, 40, 140, 0]], [0.12, [107, 44, 145, 90]], [0.4, [212, 85, 58, 175]], [0.7, [255, 170, 80, 210]], [1, [255, 226, 140, 235]]];
+  function renderTide(w) {
+    const T = w.tide, n = T.n, c = document.createElement('canvas');
+    c.width = n; c.height = n;
+    const ctx = c.getContext('2d'), img = ctx.createImageData(n, n), d = img.data, top = Math.max(w.maxTide, 0.01);
+    for (let row = 0; row < n; row++)
+      for (let col = 0; col < n; col++) {
+        const i = row * n + col, o = ((n - 1 - row) * n + col) * 4, v = Math.hypot(T.u[i], T.w[i]) / top;
+        let k = 1;
+        while (k < TIDE_RAMP.length - 1 && v > TIDE_RAMP[k][0]) k++;
+        const [a, ca] = TIDE_RAMP[k - 1], [b, cb] = TIDE_RAMP[k], t = Math.max(0, Math.min(1, (v - a) / (b - a)));
+        for (let q = 0; q < 4; q++) d[o + q] = ca[q] + (cb[q] - ca[q]) * t;
+      }
+    ctx.putImageData(img, 0, 0);
+    return c;
+  }
+
+  // ---- view
+  function fit() {
+    if (!S.w || !S.W || !S.H) { S.fitted = false; return; }
+    S.s = Math.min(S.W, S.H) / (S.w.extent * 1.02);
+    S.minS = S.s * 0.5;
+    S.maxS = 6;
+    [S.cx, S.cz] = S.w.centre;
+    S.fitted = true;
+    markDirty();
+  }
+  function zoomAt(px, py, f) {
+    const [wx, wz] = toWorld(px, py);
+    S.s = Math.max(S.minS, Math.min(S.maxS, S.s * f));
+    S.cx = wx - (px - S.W / 2) / S.s;
+    S.cz = wz + (py - S.H / 2) / S.s;
+    markDirty();
+  }
+  // On-screen px a second per m/s of current: the chosen speed (real time, 5x, 20x); zoomed out, where that would
+  // barely move, the map's own pace instead, fading out by the zoom where detail starts.
+  function pxPerMps() {
+    const map = MAP_PX_PER_MPS * Math.max(0, Math.min(1, (DETAIL_MIN_S - S.s) / (DETAIL_MIN_S - 0.1)));
+    return Math.max(S.speed * S.s, map);
+  }
+  function updateSpeedNote() {
+    const eff = pxPerMps() / S.s, chosen = S.speed === 1 ? 'real time' : `${S.speed}× real time`;
+    const day = GAME_DAY / S.speed, clock = day >= 120 ? `${Math.round(day / 60)} min` : `${Math.round(day)} s`;
+    const pace = eff > S.speed * 1.05
+      ? `Particles sped up to ${eff >= 100 ? Math.round(eff / 10) * 10 : Math.round(eff)}× real time to show at this zoom (${chosen} closer in).`
+      : `Particles move at ${chosen}.`;
+    const half = GAME_DAY / 2 / S.speed, tide = half >= 120 ? `${Math.round(half / 60)} min` : `${Math.round(half)} s`;
+    $('speedNote').textContent = S.tideView
+      ? `Play runs a game day in ${clock}, so a whole tide passes in about ${tide}.`
+      : `${pace} Colour is the real speed. Play runs a game day in ${clock}.`;
+  }
+  function settleSoon() {
+    S.interacting = true;
+    clearTimeout(S.settle);
+    S.settle = setTimeout(() => { S.interacting = false; markDirty(); }, 160);
+  }
+
+  // A grid image drawn north-up; only the part on screen is sampled.
+  function drawGrid(ctx, img, g) {
+    const [wx0, wz1] = toWorld(0, 0), [wx1, wz0] = toWorld(S.W, S.H);
+    const c0 = Math.max(0, Math.floor((wx0 - g.origin) / g.cell) - 1), c1 = Math.min(g.n, Math.ceil((wx1 - g.origin) / g.cell) + 1);
+    const r0 = Math.max(0, Math.floor((wz0 - g.origin) / g.cell) - 1), r1 = Math.min(g.n, Math.ceil((wz1 - g.origin) / g.cell) + 1);
+    if (c1 <= c0 || r1 <= r0) return;
+    const dx = toScreenX(g.origin + c0 * g.cell), dy = toScreenY(g.origin + r1 * g.cell);
+    ctx.drawImage(img, c0, g.n - r1, c1 - c0, r1 - r0, dx, dy, (c1 - c0) * g.cell * S.s, (r1 - r0) * g.cell * S.s);
+  }
+  function drawDetail(ctx) {
+    const [x0, z1] = toWorld(0, 0), [x1, z0] = toWorld(S.W, S.H);
+    const i0 = Math.floor(x0 / SQ), i1 = Math.floor(x1 / SQ), j0 = Math.floor(z0 / SQ), j1 = Math.floor(z1 / SQ);
+    for (let j = j0; j <= j1; j++)
+      for (let i = i0; i <= i1; i++) {
+        const k = sqKey(i, j), dq = DETAIL.cache.get(k);
+        if (!dq) continue;
+        DETAIL.cache.delete(k);
+        DETAIL.cache.set(k, dq); // most recently used
+        const size = dq.size * S.s;
+        ctx.drawImage(dq.img, toScreenX(dq.x0), toScreenY(dq.z0 + dq.size), size + 0.6, size + 0.6);
+      }
+  }
+  // River channels at their width (and foam on white reaches), except inside loaded detail squares, which show the
+  // real water; also lists the river points on screen for the particles (outside and inside detail).
+  function drawChannels(ctx) {
+    const w = S.w, R = w.rivers;
+    S.visN = 0;
+    S.dvisN = 0;
+    if (!R.count) return;
+    const m = 30 / S.s, [x0, z1] = toWorld(0, 0), [x1, z0] = toWorld(S.W, S.H), det = S.detailOn && DETAIL.cache.size > 0;
+    const groups = new Map(), foam = [];
+    const add = (map, key, ax, ay, bx, by) => { let g = map.get(key); if (!g) map.set(key, (g = [])); g.push(ax, ay, bx, by); };
+    eachRiverPoint(w.index, x0 - m, z0 - m, x1 + m, z1 + m, i => {
+      const j = R.next[i];
+      if (j < 0) return;
+      if (det && DETAIL.cache.has(sqKey(Math.floor(R.x[i] / SQ), Math.floor(R.z[i] / SQ)))) { S.dvis[S.dvisN++] = i; return; }
+      S.vis[S.visN++] = i;
+      const ax = toScreenX(R.x[i]), ay = toScreenY(R.z[i]), bx = toScreenX(R.x[j]), by = toScreenY(R.z[j]);
+      const wpx = Math.max(0.7, (R.half[i] + R.half[j]) * S.s);
+      add(groups, wpx < 6 ? Math.round(wpx * 4) / 4 : Math.round(wpx), ax, ay, bx, by);
+      if (S.layers.white && R.white[i] > WHITE) foam.push(ax, ay, bx, by, wpx, R.white[i]);
+    });
+    ctx.lineCap = 'round';
+    const stroke = (map, style) => {
+      ctx.strokeStyle = style;
+      for (const [k, a] of map) {
+        ctx.lineWidth = k;
+        ctx.beginPath();
+        for (let q = 0; q < a.length; q += 4) { ctx.moveTo(a[q], a[q + 1]); ctx.lineTo(a[q + 2], a[q + 3]); }
+        ctx.stroke();
+      }
+    };
+    stroke(groups, CHANNEL);
+    // White water as broken streaks along the channel, side by side where it's wide, denser the whiter it runs.
+    if (foam.length) {
+      ctx.strokeStyle = FOAM;
+      for (let q = 0; q < foam.length; q += 6) {
+        const ax = foam[q], ay = foam[q + 1], bx = foam[q + 2], by = foam[q + 3], wpx = foam[q + 4], wh = foam[q + 5];
+        const len = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / len, ny = (bx - ax) / len, lanes = wpx < 4 ? 1 : 3;
+        ctx.lineWidth = Math.max(0.8, wpx * 0.1);
+        ctx.setLineDash([2 + 8 * wh, 9 - 6 * wh]);
+        for (let l = 0; l < lanes; l++) {
+          const off = lanes === 1 ? 0 : (l - 1) * wpx * 0.28;
+          ctx.lineDashOffset = l * 5.3 + q * 0.7;
+          ctx.beginPath();
+          ctx.moveTo(ax + nx * off, ay + ny * off);
+          ctx.lineTo(bx + nx * off, by + ny * off);
+          ctx.stroke();
+        }
+      }
+      ctx.setLineDash([]);
+    }
+  }
+  function drawYou(ctx) {
+    const you = S.w.you;
+    if (!you) return;
+    const x = toScreenX(you[0]), y = toScreenY(you[1]);
+    if (x < -20 || y < -20 || x > S.W + 20 || y > S.H + 20) return;
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#ffffff';
+    ctx.fillStyle = '#f0a65e';
+    ctx.beginPath(); ctx.arc(x, y, 7, 0, 2 * Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, 2 * Math.PI); ctx.fill();
+    ctx.font = '600 12px "IBM Plex Sans", "Segoe UI", sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('you', x + 11, y + 4);
+  }
+  function drawScaleBar(ctx) {
+    const target = 110 / S.s, pow = Math.pow(10, Math.floor(Math.log10(target)));
+    const metres = [1, 2, 5, 10].map(k => k * pow).filter(v => v <= target).pop() || pow;
+    const len = metres * S.s, x1 = S.W - 18, x0 = x1 - len, y = S.H - 18;
+    ctx.strokeStyle = 'rgba(228, 237, 240, 0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x0, y - 5); ctx.lineTo(x0, y); ctx.lineTo(x1, y); ctx.lineTo(x1, y - 5); ctx.stroke();
+    ctx.font = '500 11px "IBM Plex Mono", Consolas, monospace';
+    ctx.fillStyle = 'rgba(228, 237, 240, 0.9)';
+    ctx.textAlign = 'right';
+    ctx.fillText(metres >= 1000 ? `${metres / 1000} km` : `${metres} m`, x1, y - 8);
+    ctx.textAlign = 'left';
+  }
+  function redraw() {
+    S.dirty = false;
+    S.detailOn = !!(S.w && S.w.atlas && ATLAS.on && !DETAIL.stale && S.s >= DETAIL_MIN_S);
+    const view = S.viewChanged;
+    S.viewChanged = false;
+    bctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
+    bctx.fillStyle = VOID;
+    bctx.fillRect(0, 0, S.W, S.H);
+    fctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
+    if (view || !S.animate) {
+      fctx.clearRect(0, 0, S.W, S.H);
+      free.sx.fill(NaN);
+      riv.sx.fill(NaN);
+    }
+    if (!S.w) return;
+    bctx.imageSmoothingEnabled = true;
+    if (S.s >= SMOOTH_S && !S.interacting) bctx.drawImage(smoothBase(), 0, 0, S.W, S.H);
+    else drawGrid(bctx, S.groundImg, S.w.ground);
+    if (S.detailOn) drawDetail(bctx);
+    if (S.layers.tide && !S.tideView) { bctx.globalAlpha = 0.9; drawGrid(bctx, S.tideImg, S.w.tide); bctx.globalAlpha = 1; }
+    const span = S.W / S.s, heavy = S.interacting && S.w.rivers.count > 60000 && span > 6000;
+    if (S.layers.rivers && !heavy) drawChannels(bctx);
+    else if (!S.layers.rivers) { S.visN = 0; S.dvisN = 0; }
+    if (S.tideView) { bctx.fillStyle = 'rgba(5, 9, 13, 0.62)'; bctx.fillRect(0, 0, S.W, S.H); } // the tide comes first
+    drawYou(bctx);
+    drawScaleBar(bctx);
+    if (view) { planDetail(); updateSpeedNote(); }
+    if (!S.animate) { still(); drawMarks(0); }
+  }
+
+  // ---- detail squares from the game's atlas
+  function resetDetail(seed) {
+    for (const ctrl of DETAIL.inflight.values()) ctrl.abort();
+    DETAIL.inflight.clear();
+    DETAIL.cache.clear();
+    DETAIL.failed.clear();
+    DETAIL.wanted = [];
+    DETAIL.wantedSet = new Set();
+    DETAIL.seed = seed;
+    DETAIL.stale = false;
+  }
+  // The squares covering the view (and a little round it), nearest the middle first; requests for squares that
+  // have left it are dropped.
+  function planDetail() {
+    if (!S.detailOn) {
+      for (const ctrl of DETAIL.inflight.values()) ctrl.abort();
+      DETAIL.wanted = [];
+      DETAIL.wantedSet = new Set();
+      updateChip();
+      return;
+    }
+    const m = 64, [x0, z1] = toWorld(0, 0), [x1, z0] = toWorld(S.W, S.H), list = [];
+    const i0 = Math.floor((x0 - m) / SQ), i1 = Math.floor((x1 + m) / SQ), j0 = Math.floor((z0 - m) / SQ), j1 = Math.floor((z1 + m) / SQ);
+    for (let j = j0; j <= j1; j++)
+      for (let i = i0; i <= i1; i++) {
+        const mx = (i + 0.5) * SQ, mz = (j + 0.5) * SQ;
+        if (mx * mx + mz * mz > (WORLD_EDGE + 200) ** 2) continue;
+        list.push({ i, j, k: sqKey(i, j), d: (mx - S.cx) ** 2 + (mz - S.cz) ** 2 });
+      }
+    list.sort((a, b) => a.d - b.d);
+    DETAIL.wanted = list.slice(0, DETAIL_CAP);
+    DETAIL.wantedSet = new Set(DETAIL.wanted.map(q => q.k));
+    for (const [k, ctrl] of DETAIL.inflight) if (!DETAIL.wantedSet.has(k)) ctrl.abort();
+    pump();
+  }
+  function pump() {
+    if (S.detailOn && !DETAIL.stale && !ATLAS.closed) {
+      const now = performance.now();
+      for (const q of DETAIL.wanted) {
+        if (DETAIL.inflight.size >= DETAIL_CONC) break;
+        if (DETAIL.cache.has(q.k) || DETAIL.inflight.has(q.k)) continue;
+        const failedAt = DETAIL.failed.get(q.k);
+        if (failedAt && now - failedAt < DETAIL_RETRY_MS) continue;
+        requestSquare(q);
+      }
+    }
+    updateChip();
+  }
+  async function requestSquare(q) {
+    const ctrl = new AbortController(), seed = DETAIL.seed, w = S.w;
+    DETAIL.inflight.set(q.k, ctrl);
+    try {
+      const { status, body } = await getJSON(`/detail?seed=${seedParam(seed)}&wx=${q.i}&wz=${q.j}`, { signal: ctrl.signal });
+      if (DETAIL.seed !== seed || S.w !== w) return;
+      if (status === 409) {
+        DETAIL.stale = true;
+        for (const c of DETAIL.inflight.values()) c.abort();
+        const again = seed === HERE ? 'Press This world' : `Generate ${seedLabel(seed)}`;
+        showStatus(`Your game has moved on, so close-up detail for ${seedLabel(seed)} is off. ${again} again to bring it back.`, 0, true);
+        markDirty();
+        return;
+      }
+      if (status !== 200 || !body) throw new Error(`detail ${status}`);
+      const dq = decodeDetail(body);
+      if (dq.wx !== q.i || dq.wz !== q.j) throw new Error('detail for another square');
+      dq.img = renderDetail(dq, w);
+      DETAIL.cache.set(q.k, dq);
+      DETAIL.failed.delete(q.k);
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nq = DETAIL.cache.get(sqKey(dq.wx + di, dq.wz + dj));
+        if (nq) nq.img = renderDetail(nq, w); // its edge now shades against this square's ground
+      }
+      while (DETAIL.cache.size > DETAIL_MAX) {
+        let victim;
+        for (const k of DETAIL.cache.keys()) if (!DETAIL.wantedSet.has(k)) { victim = k; break; }
+        DETAIL.cache.delete(victim !== undefined ? victim : DETAIL.cache.keys().next().value);
+      }
+      markDirty(false);
+    } catch (e) {
+      if (e.name !== 'AbortError' && DETAIL.seed === seed) DETAIL.failed.set(q.k, performance.now());
+    } finally {
+      if (DETAIL.inflight.get(q.k) === ctrl) DETAIL.inflight.delete(q.k);
+      pump();
+    }
+  }
+  function updateChip() {
+    const chip = $('detailChip'), w = S.w;
+    const show = (text, meter) => { chip.hidden = false; $('chipText').textContent = text; $('chipMeter').hidden = !meter; };
+    if (!w || w.demo) { chip.hidden = true; return; }
+    if (!w.atlas) {
+      if (S.s >= HINT_S) show('Detail: open this world through straumr atlas in game', false);
+      else chip.hidden = true;
+      return;
+    }
+    if (!ATLAS.on || DETAIL.stale || ATLAS.closed) { chip.hidden = true; return; }
+    if (!S.detailOn) { show('Zoom in for 2 m detail', false); return; }
+    const total = DETAIL.wanted.length;
+    let have = 0, failed = 0;
+    for (const q of DETAIL.wanted) {
+      if (DETAIL.cache.has(q.k)) have++;
+      else if (DETAIL.failed.has(q.k)) failed++;
+    }
+    show(`Detail ${have}/${total}${failed ? `, ${failed} failed` : ''}`, true);
+    $('chipFill').style.width = `${total ? (100 * have) / total : 100}%`;
+  }
+
+  // ---- particles
+  // Everything moving at a point: [u, w] (m/s, tide included), the river current's speed, and how white it runs.
+  function flowNow(x, z, phase, out) {
+    const w = S.w, dq = detailAt(x, z), strength = S.tide.strength;
+    const tu = phase * strength * bilinear(w.tide, w.tide.u, x, z), tw = phase * strength * bilinear(w.tide, w.tide.w, x, z);
+    if (dq) {
+      detailFlowAt(dq, x, z, f4);
+      let rs = Math.hypot(f4[0], f4[1]);
+      if (rs > 0.01 && phase !== 0) {
+        // the tide up a river mouth, against the river on the flood (it can turn it round), with it on the ebb
+        const push = tidePush(w.settings, detailLerp(dq, dq.flow.tidal, x, z) / 255, phase, strength);
+        if (push !== 0) {
+          const k = (rs - push) / rs;
+          f4[0] *= k; f4[1] *= k;
+          rs = Math.abs(rs * k);
+        }
+      }
+      out[0] = f4[0] + f4[2] + tu;
+      out[1] = f4[1] + f4[3] + tw;
+      out[2] = rs;
+      out[3] = rs > 0.05 ? whiteness(rs, detailDepthAt(dq, x, z), w.settings) : 0;
+    } else {
+      out[0] = bilinear(w.sea, w.sea.u, x, z) + tu;
+      out[1] = bilinear(w.sea, w.sea.w, x, z) + tw;
+      out[2] = 0;
+      out[3] = 0;
+    }
+    if (S.activePools.length) {
+      // a pool traps the stream passing it and turns it round instead
+      const hold = poolHold(S.activePools, w.settings, phase, x, z, strength);
+      if (hold > 0) { out[0] *= 1 - hold; out[1] *= 1 - hold; }
+      addWhirlpools(S.activePools, w.settings, phase, x, z, out, strength);
+    }
+    return out;
+  }
+  function spawnFree(p, phase) {
+    for (let tries = 0; tries < 4; tries++) {
+      let x, z;
+      if (S.dvisN && S.layers.rivers && Math.random() < 0.5) {
+        riverPos(S.w, S.dvis[(Math.random() * S.dvisN) | 0], Math.random(), (Math.random() * 2 - 1) * 0.8, p2);
+        x = p2[0]; z = p2[1];
+      } else {
+        [x, z] = toWorld(Math.random() * S.W, Math.random() * S.H);
+      }
+      flowNow(x, z, phase, q4);
+      if (Math.hypot(q4[0], q4[1]) < 0.03) continue;
+      if (q4[2] > 0.05 ? !S.layers.rivers : !S.layers.sea) continue;
+      free.x[p] = x; free.z[p] = z; free.sx[p] = NaN; free.age[p] = 0; free.life[p] = 1.2 + Math.random() * 2.4;
+      return true;
+    }
+    return false;
+  }
+  function spawnRiver(p) {
+    if (!S.visN) return false;
+    riv.i[p] = S.vis[(Math.random() * S.visN) | 0];
+    riv.t[p] = Math.random();
+    riv.o[p] = (Math.random() * 2 - 1) * 0.9;
+    riv.sx[p] = NaN; riv.age[p] = 0; riv.life[p] = 1.5 + Math.random() * 2.5;
+    return true;
+  }
+  function push(seg, ax, ay, bx, by) {
+    const a = seg.a, n = seg.n;
+    if (n + 4 > a.length) return;
+    a[n] = ax; a[n + 1] = ay; a[n + 2] = bx; a[n + 3] = by;
+    seg.n = n + 4;
+  }
+  function stepFree(dt, phase, k) {
+    const target = Math.min(MAX_FREE, Math.max(400, Math.round((S.W * S.H) / 110)));
+    for (let p = free.n; p < target; p++) { free.age[p] = 1; free.life[p] = 0; }
+    free.n = target;
+    for (let p = 0; p < free.n; p++) {
+      if (free.age[p] >= free.life[p] && !spawnFree(p, phase)) continue;
+      free.age[p] += dt;
+      flowNow(free.x[p], free.z[p], phase, q4);
+      const sp = Math.hypot(q4[0], q4[1]);
+      if (sp < 0.02) { free.age[p] = free.life[p]; continue; }
+      // midpoint step, so particles round a whirlpool instead of flying off it
+      flowNow(free.x[p] + q4[0] * k * 0.5, free.z[p] + q4[1] * k * 0.5, phase, m4);
+      const x = free.x[p] + m4[0] * k, z = free.z[p] + m4[1] * k, px = toScreenX(x), py = toScreenY(z);
+      if (px < -10 || py < -10 || px > S.W + 10 || py > S.H + 10) { free.age[p] = free.life[p]; continue; }
+      if (free.sx[p] === free.sx[p]) {
+        const seg = q4[2] > 0.05 ? segRiv[S.layers.white && q4[3] > WHITE ? WHITE_B : speedBucket(sp)] : segSea[speedBucket(sp)];
+        push(seg, free.sx[p], free.sy[p], px, py);
+      }
+      free.x[p] = x; free.z[p] = z; free.sx[p] = px; free.sy[p] = py;
+    }
+  }
+  function stepRivers(dt, k, phase) {
+    if (!S.visN) { riv.n = 0; return; }
+    const target = Math.min(MAX_RIV, Math.max(Math.min(S.visN, 300), Math.round(S.visN * 0.35)));
+    for (let p = riv.n; p < target; p++) { riv.age[p] = 1; riv.life[p] = 0; }
+    riv.n = target;
+    const w = S.w, foamy = S.layers.white, det = S.detailOn && DETAIL.cache.size > 0;
+    for (let p = 0; p < riv.n; p++) {
+      if (riv.age[p] >= riv.life[p] && !spawnRiver(p)) continue;
+      riv.age[p] += dt;
+      // net speed down the river: its own, less the tide pushing up a mouth (below zero it runs upstream)
+      const o = riv.o[p], tidal = riverAt(w, riv.i[p], riv.t[p], 'tidal');
+      const net = riverAt(w, riv.i[p], riv.t[p], 'speed') * (1 - 0.35 * o * o) - (tidal > 0 ? tidePush(w.settings, tidal, phase, S.tide.strength) : 0);
+      const speed = Math.abs(net);
+      const white = riverAt(w, riv.i[p], riv.t[p], 'white');
+      const moved = net >= 0 ? advanceRiver(w, riv.i, riv.t, p, speed * k) : retreatRiver(w, riv.i, riv.t, p, speed * k);
+      if (!moved) { riv.age[p] = riv.life[p]; continue; }
+      const foam = foamy && white > WHITE;
+      if (foam) riv.o[p] = Math.max(-0.95, Math.min(0.95, o + (Math.random() - 0.5) * 0.3));
+      riverPos(w, riv.i[p], riv.t[p], riv.o[p], p2);
+      if (det && DETAIL.cache.has(sqKey(Math.floor(p2[0] / SQ), Math.floor(p2[1] / SQ)))) { riv.age[p] = riv.life[p]; continue; }
+      const px = toScreenX(p2[0]), py = toScreenY(p2[1]);
+      if (px < -20 || py < -20 || px > S.W + 20 || py > S.H + 20) { riv.age[p] = riv.life[p]; continue; }
+      const hop = Math.abs(px - riv.sx[p]) + Math.abs(py - riv.sy[p]);
+      if (hop < 60) push(segRiv[foam ? WHITE_B : speedBucket(speed)], riv.sx[p], riv.sy[p], px, py);
+      riv.sx[p] = px; riv.sy[p] = py;
+    }
+  }
+  function drawSegments() {
+    fctx.lineCap = 'round';
+    const draw = (seg, style, width) => {
+      if (!seg.n) return;
+      fctx.strokeStyle = style;
+      fctx.lineWidth = width;
+      fctx.beginPath();
+      const a = seg.a;
+      for (let q = 0; q < seg.n; q += 4) { fctx.moveTo(a[q], a[q + 1]); fctx.lineTo(a[q + 2], a[q + 3]); }
+      fctx.stroke();
+      seg.n = 0;
+    };
+    for (let b = 0; b < BUCKETS; b++) draw(segSea[b], COLORS[b], 1.1);
+    for (let b = 0; b < BUCKETS; b++) draw(segRiv[b], COLORS[b], 1.5);
+    draw(segRiv[WHITE_B], 'rgba(255, 255, 255, 0.95)', 2.3);
+  }
+  function stepFlow(dt, fade) {
+    if (!S.w) return;
+    if (fade < 1) {
+      fctx.globalCompositeOperation = 'destination-in';
+      fctx.fillStyle = `rgba(0, 0, 0, ${fade})`;
+      fctx.fillRect(0, 0, S.W, S.H);
+      fctx.globalCompositeOperation = 'source-over';
+    }
+    if (S.tideView) return; // the tide view draws the tide instead; the particles fade away
+    const phase = S.tide.phase, k = (pxPerMps() * dt) / S.s;
+    S.activePools = S.layers.pools ? S.w.whirlpools.filter(p => {
+      if (poolOn(p, phase) <= 0) return false;
+      const x = toScreenX(p.x), y = toScreenY(p.z), m = 4 * p.core * S.s + 20;
+      return x > -m && y > -m && x < S.W + m && y < S.H + m;
+    }) : [];
+    if (S.layers.sea || (S.detailOn && S.layers.rivers && S.dvisN)) stepFree(dt, phase, k); else free.n = 0;
+    if (S.layers.rivers) stepRivers(dt, k, phase); else riv.n = 0;
+    drawSegments();
+  }
+  // Whirlpool markers, redrawn every frame on their own layer: a faint dashed ring where a pool waits for its tide;
+  // as the tide comes it brightens and three arms spin up the way the water turns (as fast as its particles go round).
+  // The layer over the map, redrawn every frame: the tide view's colours and arrows, then the whirlpools.
+  function drawMarks(dt) {
+    mctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
+    mctx.clearRect(0, 0, S.W, S.H);
+    if (S.w && S.tideView) drawTideView();
+    drawPools(dt);
+  }
+  const FLOOD_RGB = [72, 214, 180], EBB_RGB = [245, 168, 72], HIGH_RGB = [96, 168, 255], LOW_RGB = [222, 120, 90];
+  const TV = { canvas: null, key: '', world: null };
+  const tideTop = w => Math.max(0.05, w.maxTide * (1 + (w.lunar ? w.settings.springNeap : 0)));
+  // The tide view's sea colours now: CURRENTS by the tidal stream (flood running in, ebb running out, brighter the
+  // faster, against the strongest springs); HEIGHT by the water level (above mean blue, below it red, against the
+  // springs' range), so high water can be seen arriving late behind narrow mouths.
+  function tideField() {
+    const w = S.w, t = S.tide, height = S.tideMode === 'height', g = height ? w.tideLevel : w.tide;
+    if (!g) return null;
+    const key = `${height}|${t.angle.toFixed(4)}|${t.strength.toFixed(4)}|${t.phase.toFixed(4)}`;
+    if (TV.canvas && TV.key === key && TV.world === w) return TV.canvas;
+    const n = g.n, sn = w.lunar ? w.settings.springNeap : 0, top = tideTop(w);
+    if (!TV.canvas) TV.canvas = document.createElement('canvas');
+    if (TV.canvas.width !== n || TV.canvas.height !== n) { TV.canvas.width = n; TV.canvas.height = n; }
+    const ctx = TV.canvas.getContext('2d'), img = ctx.createImageData(n, n), d = img.data;
+    for (let row = 0; row < n; row++)
+      for (let col = 0; col < n; col++) {
+        const i = row * n + col, o = ((n - 1 - row) * n + col) * 4;
+        let rgb, a;
+        if (height) {
+          if (g.amp[i] <= 0) continue; // land
+          const k = (-t.strength * g.amp[i] * Math.cos(t.angle - g.lag[i])) / (1 + sn);
+          rgb = k >= 0 ? HIGH_RGB : LOW_RGB;
+          a = 0.12 + 0.78 * Math.min(1, Math.abs(k));
+        } else {
+          const v = Math.hypot(g.u[i], g.w[i]);
+          if (v <= 0) continue;
+          rgb = t.phase >= 0 ? FLOOD_RGB : EBB_RGB;
+          a = Math.min(0.9, 0.06 + (1.1 * v * Math.abs(t.phase) * t.strength) / top);
+        }
+        d[o] = rgb[0]; d[o + 1] = rgb[1]; d[o + 2] = rgb[2]; d[o + 3] = a * 255;
+      }
+    ctx.putImageData(img, 0, 0);
+    TV.key = key;
+    TV.world = w;
+    return TV.canvas;
+  }
+  function drawTideView() {
+    const w = S.w, t = S.tide, img = tideField();
+    if (img) {
+      mctx.imageSmoothingEnabled = true;
+      drawGrid(mctx, img, S.tideMode === 'height' ? w.tideLevel : w.tide);
+    }
+    if (S.tideMode !== 'currents') return;
+    // arrows on a screen grid, as long as the stream is fast: they turn round when the tide does
+    const step = 46, top = tideTop(w), k = t.phase * t.strength, col = t.phase >= 0 ? FLOOD_RGB : EBB_RGB;
+    mctx.strokeStyle = `rgba(${col.join(',')}, 0.9)`;
+    mctx.lineWidth = 1.7;
+    mctx.lineCap = 'round';
+    mctx.lineJoin = 'round';
+    mctx.beginPath();
+    for (let py = step / 2; py < S.H; py += step)
+      for (let px = step / 2; px < S.W; px += step) {
+        const [x, z] = toWorld(px, py);
+        vecAt(w.tide, x, z, v2);
+        const u = v2[0] * k, v = v2[1] * k, sp = Math.hypot(u, v);
+        if (sp < Math.max(0.03, 0.06 * top)) continue; // only where the stream is worth an arrow
+        const len = Math.min(36, 8 + (28 * sp) / top), ux = u / sp, uy = -v / sp; // screen y runs down
+        const x1 = px + (ux * len) / 2, y1 = py + (uy * len) / 2;
+        mctx.moveTo(px - (ux * len) / 2, py - (uy * len) / 2);
+        mctx.lineTo(x1, y1);
+        mctx.moveTo(x1 - ux * 6 - uy * 4, y1 - uy * 6 + ux * 4);
+        mctx.lineTo(x1, y1);
+        mctx.lineTo(x1 - ux * 6 + uy * 4, y1 - uy * 6 - ux * 4);
+      }
+    mctx.stroke();
+  }
+  function drawPools(dt) {
+    const w = S.w;
+    if (!w || !S.layers.pools || !w.whirlpools.length) return;
+    if (S.poolAngle.length !== w.whirlpools.length) S.poolAngle = new Float32Array(w.whirlpools.length);
+    const phase = S.tide.phase;
+    mctx.lineCap = 'round';
+    w.whirlpools.forEach((p, n) => {
+      const R = Math.max(7, 2.2 * p.core * S.s), x = toScreenX(p.x), y = toScreenY(p.z);
+      if (x < -R || y < -R || x > S.W + R || y > S.H + R) return;
+      const on = poolOn(p, phase), vmax = poolPeak(p, w.settings, phase, S.tide.strength);
+      const omega = Math.min(5, (vmax * pxPerMps()) / Math.max(2, p.core * S.s));
+      S.poolAngle[n] = (S.poolAngle[n] + p.turn * omega * dt) % (2 * Math.PI);
+      mctx.strokeStyle = `rgba(191, 233, 242, ${(0.22 + 0.5 * on).toFixed(3)})`;
+      mctx.lineWidth = 1.2;
+      mctx.setLineDash(on > 0.02 ? [] : [2, 3]);
+      mctx.beginPath();
+      mctx.arc(x, y, R, 0, 2 * Math.PI);
+      mctx.stroke();
+      mctx.setLineDash([]);
+      if (on <= 0.02) return;
+      mctx.strokeStyle = `rgba(226, 246, 250, ${(0.25 + 0.65 * on).toFixed(3)})`;
+      mctx.lineWidth = 1.6;
+      for (let a = 0; a < 3; a++) {
+        mctx.beginPath();
+        for (let q = 0; q <= 12; q++) {
+          // world angle (east = 0, north = pi/2); the arms trail outward like the inflowing water's path
+          const f = q / 12, rr = R * (0.2 + 0.8 * f), ang = S.poolAngle[n] + (a * 2 * Math.PI) / 3 - p.turn * f * 1.6;
+          const px = x + rr * Math.cos(ang), py = y - rr * Math.sin(ang);
+          if (q) mctx.lineTo(px, py); else mctx.moveTo(px, py);
+        }
+        mctx.stroke();
+      }
+    });
+  }
+  // Animation off: one still frame of short streaks.
+  function still() {
+    for (let q = 0; q < 26; q++) stepFlow(1 / 60, 1);
+  }
+
+  // ---- readouts
+  function tideText(st, tidal, phase, strength) {
+    const push = tidePush(st, tidal, phase, strength), most = tidePush(st, tidal, 1, strength);
+    if (Math.abs(phase) < 0.05) return `slack (the tide reaches here: up to ${most.toFixed(2)} m/s)`;
+    return push > 0 ? `tide pushing upstream ${push.toFixed(2)} m/s` : `ebb adding ${(-push).toFixed(2)} m/s`;
+  }
+  function updateReadout() {
+    const el = $('readout'), w = S.w;
+    if (!w || !S.hover) {
+      el.innerHTML = `<span class="hint">${matchMedia('(hover: none)').matches ? 'Tap' : 'Point at'} the map to read the water there.</span>`;
+      return;
+    }
+    const [x, z] = S.hover, phase = S.tide.phase, strength = S.tide.strength, rows = [];
+    const row = (k, v, cls) => rows.push(`<dt>${esc(k)}</dt><dd${cls ? ` class="${cls}"` : ''}>${v}</dd>`);
+    row('Position', `x ${Math.round(x)} &nbsp;z ${Math.round(z)}`);
+    if (S.tideView) {
+      // the tide and nothing else: "flood 0.80 m/s NE, level +0.30 m (range ×0.6, 40° behind the open sea)"
+      vecAt(w.tide, x, z, v2);
+      const u = v2[0] * phase * strength, v = v2[1] * phase * strength, sp = Math.hypot(u, v);
+      const state = Math.abs(phase) < 0.12 ? 'slack' : phase > 0 ? 'flood' : 'ebb';
+      let text = sp > 0.005 ? `${state} ${sp.toFixed(2)} m/s ${compass(u, v)}` : `${state}, no tidal stream here`;
+      const lv = levelAt(w, x, z, S.tide);
+      if (lv && lv.amp > 0.005) {
+        text += `, level ${lv.level >= 0 ? '+' : '−'}${Math.abs(lv.level).toFixed(2)} m (range ×${lv.amp.toFixed(1)}, ${Math.round((lv.lag * 180) / Math.PI)}° behind the open sea)`;
+      }
+      row('Tide here', text);
+      el.innerHTML = `<dl>${rows.join('')}</dl>`;
+      return;
+    }
+    const dq = detailAt(x, z);
+    if (dq) {
+      const c = detailCellAt(dq, x, z), wet = c.wet || c.h < 0, depth = c.h < 0 ? -c.h : c.depth;
+      row('Ground', wet ? `Water, ${depth.toFixed(1)} m deep` : `${esc(w.biomes[c.biome] || 'Unknown')}, ${c.h.toFixed(1)} m above sea`);
+      detailFlowAt(dq, x, z, f4);
+      const base = Math.hypot(f4[0], f4[1]), tidal = detailLerp(dq, dq.flow.tidal, x, z) / 255;
+      const scale = base > 0.01 && tidal > 0 ? (base - tidePush(w.settings, tidal, phase, strength)) / base : 1;
+      const ru = f4[0] * scale, rw = f4[1] * scale, sp = Math.abs(base * scale);
+      if (wet && base > 0.02) {
+        const wh = whiteness(sp, depth, w.settings), fr = froude(sp, depth);
+        row('Current', `${sp.toFixed(2)} m/s toward ${compass(ru, rw)}${scale < 0 ? ' (the tide runs it upstream)' : ''}`);
+        row('Froude', `${fr.toFixed(2)}${fr >= 1 ? ' · supercritical' : ''}`);
+        row('White water', wh > 0.005 ? `${Math.round(wh * 100)}%${wh > WHITE ? ' · rapids' : ''}` : 'none', wh > WHITE ? 'white' : '');
+      }
+      if (wet && tidal > 0.01) row('River tide', tideText(w.settings, tidal, phase, strength));
+      const ss = Math.hypot(f4[2], f4[3]);
+      if (ss > 0.005) row('Sea current', `${ss.toFixed(2)} m/s toward ${compass(f4[2], f4[3])}`);
+    } else {
+      const g = groundAt(w, x, z);
+      if (!g) row('Ground', 'Past the edge of the world');
+      else row('Ground', g.h < 0 ? `Water, ${(-g.h).toFixed(1)} m deep` : `${esc(g.biome)}, ${g.h.toFixed(1)} m above sea`);
+      const i = w.rivers.count ? nearestRiver(w, x, z, Math.max(40, 10 / S.s)) : -1;
+      if (i >= 0) {
+        const R = w.rivers, net = R.speed[i] - (R.tidal[i] > 0 ? tidePush(w.settings, R.tidal[i], phase, strength) : 0);
+        const way = net >= 0 ? compass(R.dx[i], R.dz[i]) : `${compass(-R.dx[i], -R.dz[i])}, upstream`;
+        row('River', `${Math.abs(net).toFixed(2)} m/s ${way} · ${R.depth[i].toFixed(1)} m deep · ${Math.round(2 * R.half[i])} m wide`);
+        if (R.tidal[i] > 0.01) row('River tide', tideText(w.settings, R.tidal[i], phase, strength));
+        if (R.white[i] > 0.01) row('White water', `${Math.round(R.white[i] * 100)}%${R.white[i] > WHITE ? ' · rapids' : ''}`, R.white[i] > WHITE ? 'white' : '');
+      }
+      vecAt(w.sea, x, z, v2);
+      const seaSp = Math.hypot(v2[0], v2[1]);
+      if (seaSp > 0.005) row('Sea current', `${seaSp.toFixed(2)} m/s toward ${compass(v2[0], v2[1])}`);
+    }
+    if (S.layers.pools && w.whirlpools.length) {
+      let pool = null, best = Infinity;
+      for (const p of w.whirlpools) {
+        const dist = Math.hypot(p.x - x, p.z - z);
+        if (dist < Math.max(4 * p.core, 12 / S.s) && dist < best) { best = dist; pool = p; }
+      }
+      if (pool) {
+        const v = poolPeak(pool, w.settings, phase, strength), hold = poolHold(w.whirlpools, w.settings, phase, x, z, strength);
+        row('Whirlpool', `turns ${pool.turn > 0 ? 'anticlockwise' : 'clockwise'} on the ${pool.tide > 0 ? 'flood' : 'ebb'}, now ${v.toFixed(2)} m/s${v > 0 ? '' : ' (waiting for its tide)'}${hold > 0.02 ? `; holds ${Math.round(hold * 100)}% of the passing stream here` : ''}`);
+        // the water here as the pool leaves it: the stream held back, plus the pool's turn
+        let su, sw;
+        if (dq) { detailFlowAt(dq, x, z, f4); su = f4[0] + f4[2]; sw = f4[1] + f4[3]; }
+        else { vecAt(w.sea, x, z, v2); su = v2[0]; sw = v2[1]; }
+        vecAt(w.tide, x, z, v2);
+        const here = [(su + v2[0] * phase * strength) * (1 - hold), (sw + v2[1] * phase * strength) * (1 - hold)];
+        addWhirlpools(w.whirlpools, w.settings, phase, x, z, here, strength);
+        const hs = Math.hypot(here[0], here[1]);
+        if (hs > 0.005) row('Water here', `${hs.toFixed(2)} m/s toward ${compass(here[0], here[1])}`);
+      }
+    }
+    vecAt(w.tide, x, z, v2);
+    const full = Math.hypot(v2[0], v2[1]);
+    if (full > 0.005) {
+      const now = full * Math.abs(phase) * strength, kind = tideKind(w, strength);
+      const way = Math.abs(phase) < 0.12 ? 'slack' : phase > 0 ? `flooding toward ${compass(v2[0], v2[1])}` : `ebbing toward ${compass(-v2[0], -v2[1])}`;
+      row('Tide now', `${now.toFixed(2)} m/s, ${way}`);
+      row('Tidal race', `${(full * strength).toFixed(2)} m/s at full flood${kind ? `, ${kind} tides` : ''}`);
+    }
+    el.innerHTML = `<dl>${rows.join('')}</dl>${dq ? '<div class="src">Close-up: 2 m ground, 4 m currents at normal flow</div>' : ''}`;
+  }
+  function updateMeta() {
+    const w = S.w, el = $('meta'), info = ATLAS.info;
+    const parts = [];
+    if (w.demo) {
+      parts.push('<span class="tag">Sample</span>', '<span>Made-up island, not your world</span>');
+      if (ATLAS.on && info) {
+        parts.push(`<span>your game: rivers from ${esc(info.rivers_from || 'Valheim\'s')}${info.preset ? `, preset ${esc(info.preset)}` : ''}</span>`);
+      }
+    } else {
+      if (w.seed === HERE) parts.push('<span class="tag">This world</span>', `<b>${esc(w.name)}</b>`);
+      else if (w.seed) {
+        parts.push('<span class="tag">Seed</span>', `<b>${esc(baseSeed(w.seed))}</b>`);
+        if (w.seed.endsWith(VALHEIM)) parts.push('<span>Valheim world</span>');
+      }
+      else parts.push(`<b>${esc(w.name)}</b>`);
+      if (w.riversFrom) parts.push(`<span>rivers from ${esc(w.riversFrom)}${w.preset ? `, preset ${esc(w.preset)}` : ''}</span>`);
+    }
+    parts.push(`<span>${w.riverCount.toLocaleString()} rivers · ${w.rivers.count.toLocaleString()} river points</span>`);
+    parts.push(`<span>strongest tidal race ${w.maxTide.toFixed(2)} m/s${w.whirlpools.length ? ` · ${w.whirlpools.length} whirlpool${w.whirlpools.length === 1 ? '' : 's'}` : ''}</span>`);
+    if (w.made && !w.atlas) parts.push(`<span>exported ${esc(w.made)}</span>`);
+    el.innerHTML = parts.join('');
+    $('zoomYou').hidden = !w.you;
+    $('poolKey').hidden = !w.whirlpools.length;
+    $('tideKeyText').textContent = `Tidal race at full flood, up to ${w.maxTide.toFixed(2)} m/s`;
+  }
+  // The one clock: game days since the world began. The tide, the moon and the time of day all follow it.
+  function setTime(D) {
+    S.D = D;
+    S.day = frac(D);
+    if (S.w) S.tide = tideAt(S.w, D);
+    updateTimeUI();
+    if (S.hover) updateReadout();
+    if (!S.animate) markDirty();
+  }
+  const MOON_NAMES = ['full moon', 'waning gibbous', 'last quarter', 'waning crescent', 'new moon', 'waxing crescent', 'first quarter', 'waxing gibbous'];
+  // The moon's lit shape (0 full, 0.5 new): lit on the right while waxing, on the left while waning.
+  function moonPath(m) {
+    const r = 8, c = Math.cos(2 * Math.PI * m), rx = (Math.abs(c) * r).toFixed(2), gibbous = c > 0;
+    if (m > 0 && m < 0.5) return `M0 ${-r}A${r} ${r} 0 0 0 0 ${r}A${rx} ${r} 0 0 ${gibbous ? 0 : 1} 0 ${-r}Z`;
+    return `M0 ${-r}A${r} ${r} 0 0 1 0 ${r}A${rx} ${r} 0 0 ${gibbous ? 1 : 0} 0 ${-r}Z`;
+  }
+  // Today's tide curve: two tides (a little later each day with a lunar month), taller at springs than at neaps.
+  function buildCurve() {
+    const w = S.w, day = Math.floor(S.D), sn = w && w.lunar ? w.settings.springNeap : 0;
+    let line = '';
+    for (let k = 0; k <= 240; k++) {
+      const t = tideAt(w, day + k / 240), amp = (24 * t.strength) / (1 + sn);
+      line += `${k ? 'L' : 'M'}${((k / 240) * 1000).toFixed(1)} ${(30 - amp * t.phase).toFixed(2)}`;
+    }
+    $('curveLine').setAttribute('d', line);
+    const area = `${line}L1000 30L0 30Z`;
+    $('floodArea').setAttribute('d', area);
+    $('ebbArea').setAttribute('d', area);
+  }
+  function updateTimeUI() {
+    const w = S.w, t = S.tide, d = S.day, minutes = Math.floor(d * 24 * 60);
+    $('daySlider').value = d.toFixed(3);
+    $('clock').textContent = `${String(Math.floor(minutes / 60) % 24).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+    // like the game's tide line: "Flood tide · spring · high water in 4 min" (real minutes)
+    const state = Math.abs(t.phase) < 0.12 ? 'Slack water' : t.phase > 0 ? 'Flood tide' : 'Ebb tide';
+    const kind = w ? tideKind(w, t.strength) : '';
+    const high = t.angle < Math.PI, wait = (((high ? Math.PI : 2 * Math.PI) - t.angle) / t.rate) * GAME_DAY;
+    $('phaseText').innerHTML = `<b>${state}</b>${kind ? ` · ${kind}` : ''} · ${high ? 'high' : 'low'} water ${wait < 45 ? 'now' : `in ${Math.round(wait / 60)} min`}`;
+    const m = $('marker');
+    m.setAttribute('x1', (d * 1000).toFixed(1));
+    m.setAttribute('x2', (d * 1000).toFixed(1));
+    const key = w ? `${Math.floor(S.D)}|${w.D0}|${w.lunar}|${w.moon}` : '';
+    if (key !== S.curveKey) { S.curveKey = key; buildCurve(); }
+    const lunar = !!(w && w.lunar);
+    $('moonRow').hidden = !lunar;
+    if (lunar) {
+      const md = w.monthDays, today = Math.floor(t.moon * md + 1e-6), slider = $('moonSlider');
+      slider.max = String(Math.max(1, Math.ceil(md) - 1));
+      if (document.activeElement !== slider) slider.value = String(today);
+      const label = `Moon day ${today + 1} of ${Number.isInteger(md) ? md : md.toFixed(1)} · ${MOON_NAMES[Math.round(t.moon * 8) % 8]} · ${kind ? `${kind} tides` : 'between springs and neaps'}`;
+      if ($('moonText').textContent !== label) {
+        $('moonText').textContent = label;
+        $('moonLit').setAttribute('d', moonPath(t.moon));
+      }
+    }
+    if (S.tideView) updateGauge();
+  }
+  const clockText = f => {
+    const m = Math.floor(frac(f) * 1440);
+    return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  };
+  const inMinutes = days => {
+    const m = (days * GAME_DAY) / 60;
+    return m < 0.75 ? 'now' : m < 90 ? `in ${Math.round(m)} min` : `in ${(m / 60).toFixed(1)} h`;
+  };
+  // The tide gauge: the open sea's level now, on a scale reaching the strongest springs (today's range shaded),
+  // today's curve with a "now" line, the next high and low water, and the moon. Older files without tide heights
+  // show the stream instead.
+  function updateGauge() {
+    const w = S.w, t = S.tide;
+    if (!w || !S.tideView) return;
+    const hasLevel = !!w.tideLevel, sn = w.lunar ? w.settings.springNeap : 0, range = w.settings.tideRange;
+    const unit = hasLevel ? range : 1, R = unit * (1 + sn), today = unit * t.strength;
+    const valueAt = tt => (hasLevel ? -range * tt.strength * Math.cos(tt.angle) : tt.phase * tt.strength);
+    const now = valueAt(t), y = v => 75 - (v / R) * 62;
+    const fmt = v => (hasLevel ? `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(2)} m` : `${v >= 0 ? 'flood' : 'ebb'} ${Math.round(Math.abs(v) * 100)}%`);
+    const lab = v => (hasLevel ? `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)}` : v > 0 ? 'flood' : v < 0 ? 'ebb' : '0');
+    $('gaugeTitle').textContent = hasLevel ? 'Open sea level' : 'Open sea stream';
+    $('gaugeBar').innerHTML =
+      `<rect x="34" y="${y(today).toFixed(1)}" width="12" height="${(y(-today) - y(today)).toFixed(1)}" class="g-band"></rect>` +
+      '<line x1="40" y1="13" x2="40" y2="137" class="g-axis"></line>' +
+      [R, 0, -R].map(v => `<line x1="35" x2="45" y1="${y(v)}" y2="${y(v)}" class="g-tick"></line><text x="30" y="${y(v) + 3.5}" text-anchor="end" class="g-lab">${lab(v)}</text>`).join('') +
+      `<rect x="37" width="6" y="${Math.min(y(now), y(0)).toFixed(1)}" height="${Math.abs(y(now) - y(0)).toFixed(1)}" class="${now >= 0 ? 'g-high' : 'g-low'}"></rect>` +
+      `<path d="M47 ${y(now).toFixed(1)}l8 -5v10z" class="g-mark"></path>` +
+      `<text x="58" y="${(y(now) + 4.5).toFixed(1)}" class="g-val">${fmt(now)}</text>`;
+    const key = `${Math.floor(S.D)}|${hasLevel}|${w.D0}|${w.moon}`;
+    if (key !== S.gaugeKey) {
+      S.gaugeKey = key;
+      const day = Math.floor(S.D), cy = v => 45 - (v / R) * 38;
+      let line = '';
+      for (let k = 0; k <= 160; k++) line += `${k ? 'L' : 'M'}${((k / 160) * 240).toFixed(1)} ${cy(valueAt(tideAt(w, day + k / 160))).toFixed(2)}`;
+      $('gaugeCurve').innerHTML =
+        '<defs><clipPath id="gcTop"><rect x="0" y="0" width="240" height="45"></rect></clipPath><clipPath id="gcBot"><rect x="0" y="45" width="240" height="45"></rect></clipPath></defs>' +
+        `<path d="${line}L240 45L0 45Z" class="gc-hi" clip-path="url(#gcTop)"></path><path d="${line}L240 45L0 45Z" class="gc-lo" clip-path="url(#gcBot)"></path>` +
+        `<line x1="0" y1="45" x2="240" y2="45" class="gc-mid"></line><path d="${line}" class="gc-line"></path>` +
+        '<line id="gcNow" x1="0" y1="2" x2="0" y2="88" class="gc-now"></line>';
+    }
+    $('gcNow').setAttribute('x1', (S.day * 240).toFixed(1));
+    $('gcNow').setAttribute('x2', (S.day * 240).toFixed(1));
+    // the next high and low water: in game time, and in real minutes from now
+    const turn = target => ((((target - t.angle) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) / t.rate;
+    const hw = turn(Math.PI), lw = turn(2 * Math.PI);
+    $('gaugeTimes').innerHTML =
+      `<dt>High water</dt><dd>${clockText(S.D + hw)} · ${inMinutes(hw)}</dd>` +
+      `<dt>Low water</dt><dd>${clockText(S.D + lw)} · ${inMinutes(lw)}</dd>`;
+    const kind = tideKind(w, t.strength);
+    let note = w.lunar
+      ? `Moon day ${Math.floor(t.moon * w.monthDays + 1e-6) + 1} of ${Number.isInteger(w.monthDays) ? w.monthDays : w.monthDays.toFixed(1)} · ${MOON_NAMES[Math.round(t.moon * 8) % 8]} · ${kind ? `${kind} tides` : 'between springs and neaps'} (range ×${t.strength.toFixed(2)})`
+      : 'Two tides a day (this map has no moon: an older export).';
+    if (!hasLevel) note += S.tideMode === 'height' ? ' Height needs a newer export: export again with straumr map, or generate again in the atlas.' : ' Heights need a newer export; the gauge shows the stream.';
+    $('gaugeNote').textContent = note;
+    $('gaugeNote').classList.toggle('warn', !hasLevel && S.tideMode === 'height');
+  }
+  function setSpeed(v) {
+    S.speed = v;
+    const r = document.querySelector(`input[name="speed"][value="${v}"]`);
+    if (r) r.checked = true;
+    updateSpeedNote();
+  }
+  // Tide view: the map is about the tide and nothing else. It plays at 20x, so a whole tide passes in about 45 s.
+  function setTideView(on) {
+    if (S.tideView === on) return;
+    S.tideView = on;
+    $('tideBtn').setAttribute('aria-pressed', String(on));
+    stage.classList.toggle('tideview', on);
+    $('gauge').hidden = !on;
+    if (on) {
+      setHowto(false);
+      S.speedBeforeTide = S.speed;
+      setSpeed(20);
+      S.gaugeKey = '';
+      updateGauge();
+    } else if (S.speedBeforeTide) {
+      setSpeed(S.speedBeforeTide);
+      S.speedBeforeTide = null;
+    }
+    updateLegend();
+    updateReadout();
+    markDirty();
+  }
+  function updateLegend() {
+    const tv = S.tideView, height = S.tideMode === 'height', w = S.w;
+    $('speedScale').hidden = tv;
+    $('mapKeys').hidden = tv;
+    $('tideKeys').hidden = !tv;
+    $('legendHead').innerHTML = !tv ? '<b>Current speed</b> (m/s)' : height ? '<b>Water level</b> now' : '<b>Tidal stream</b> now';
+    for (const id of ['keyFlood', 'keyEbb', 'keyArrows']) $(id).hidden = height;
+    $('keyLevel').hidden = !height;
+    if (w) {
+      const R = w.settings.tideRange * (1 + (w.lunar ? w.settings.springNeap : 0));
+      $('keyLevelText').textContent = w.tideLevel ? `Below mean · above mean (up to ±${R.toFixed(2)} m at springs)` : 'Water level needs a newer export';
+    }
+    updateSpeedNote();
+  }
+  function buildStaticUI() {
+    $('ramp').style.background = `linear-gradient(90deg, ${RAMP.map(([v, c]) => `rgb(${c.join(',')}) ${((v / RAMP_MAX) * 100).toFixed(1)}%`).join(', ')})`;
+    $('ticks').innerHTML = [0, 1, 2, 3].map(v => `<span style="left:${((v / RAMP_MAX) * 100).toFixed(1)}%">${v}</span>`).join('');
+  }
+
+  // ---- status, loading
+  let statusTimer = 0;
+  function showStatus(text, ms, error) {
+    const el = $('status');
+    $('statusText').textContent = text;
+    el.classList.toggle('error', !!error);
+    el.hidden = false;
+    clearTimeout(statusTimer);
+    if (ms) statusTimer = setTimeout(() => { el.hidden = true; }, ms);
+  }
+  function setHowto(open) {
+    $('howto').hidden = !open;
+    stage.dataset.howto = open ? 'open' : 'closed';
+  }
+  function setWorld(w) {
+    S.w = w;
+    S.D = w.D0;
+    S.day = frac(w.D0);
+    S.tide = tideAt(w, w.D0);
+    S.curveKey = '';
+    S.gaugeKey = '';
+    TV.key = '';
+    S.groundImg = renderGround(w);
+    S.tideImg = renderTide(w);
+    S.vis = new Int32Array(Math.max(1, w.rivers.count));
+    S.dvis = new Int32Array(Math.max(1, w.rivers.count));
+    S.visN = 0;
+    S.dvisN = 0;
+    free.n = 0;
+    riv.n = 0;
+    S.hover = null;
+    fit();
+    updateMeta();
+    updateTimeUI();
+    updateReadout();
+    updateChip();
+    updateLegend();
+    markDirty();
+  }
+  async function loadFile(file) {
+    if (!file) return;
+    ATLAS.token++; // a file wins over a generation in progress
+    setGenerating(false);
+    showStatus(`Reading ${file.name}…`);
+    try {
+      const text = await file.text();
+      let j;
+      try { j = JSON.parse(text); } catch (e) { throw new Error(`${file.name} isn't a JSON file. Export a fresh one with "straumr map".`); }
+      const w = decodeFlowmap(j);
+      resetDetail('');
+      setWorld(w);
+      setHowto(false);
+      showStatus(`Loaded ${w.name}: ${w.riverCount.toLocaleString()} rivers.`, 4000);
+    } catch (e) {
+      showStatus(e.message || String(e), 0, true);
+    }
+  }
+
+  // ---- atlas: seeds generated by the player's own game, served from localhost
+  // The game closes the atlas when Valheim quits, 3 minutes after the last request, or soon after the page says
+  // goodbye; the page notices and says how to reopen it, and picks up again if it comes back.
+  const CLOSED = 'The atlas closed (Valheim quit or the page was away too long). Type straumr atlas in game to reopen.';
+  function noteClosed() {
+    if (ATLAS.closed) return;
+    ATLAS.closed = true;
+    showStatus(CLOSED, 0, true);
+    updateChip();
+  }
+  function noteOpen() {
+    if (!ATLAS.closed) return;
+    ATLAS.closed = false;
+    showStatus('The atlas is back.', 3000);
+    pump();
+  }
+  async function getJSON(url, opts) {
+    let res;
+    try {
+      res = await fetch(url, Object.assign({ cache: 'no-store' }, opts));
+    } catch (e) {
+      if (e.name === 'AbortError') throw e;
+      if (ATLAS.on) { noteClosed(); throw new Error(CLOSED); }
+      throw new Error(`Can't reach your game at ${location.host}.`);
+    }
+    if (ATLAS.on) noteOpen();
+    let body = null;
+    try { body = await res.json(); } catch (e) {
+      if (res.status === 200 || res.status === 202) throw new Error(`Your game sent something that isn't JSON (${res.status}).`);
+    }
+    return { status: res.status, body };
+  }
+  async function detectAtlas() {
+    if (!atlasLocal(location)) return false;
+    const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 2500);
+    try {
+      const { status, body } = await getJSON('/atlas', { signal: ctrl.signal });
+      if (status !== 200 || !body || body.atlas !== true) return false;
+      ATLAS.on = true;
+      ATLAS.info = body;
+      return true;
+    } catch (e) {
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  function setGenerating(on, seed) {
+    ATLAS.busy = !!on;
+    $('seedBtn').textContent = on && seed !== HERE ? 'Generating…' : 'Generate';
+    $('seedForm').setAttribute('aria-busy', String(!!on));
+    if (on && seed && seed !== HERE) {
+      $('seedInput').value = baseSeed(seed);
+      if (ATLAS.twoWorlds) setWorldPick(seed.endsWith(VALHEIM));
+    }
+  }
+  // Two generators to choose from (Riverheim's and Valheim's): the Valheim one is asked for as seed~valheim.
+  const valheimPicked = () => ATLAS.twoWorlds && $('worldPick').querySelector('input[value="valheim"]').checked;
+  const seedKey = seed => (valheimPicked() ? seed + VALHEIM : seed);
+  function setWorldPick(valheim) {
+    $('worldPick').querySelector(`input[value="${valheim ? 'valheim' : 'riverheim'}"]`).checked = true;
+  }
+  function updateHere() {
+    const here = ATLAS.on && ATLAS.info && ATLAS.info.here, btn = $('hereBtn');
+    btn.hidden = !here;
+    $('hereHint').hidden = !here;
+    if (here) {
+      btn.textContent = `This world (${here})`;
+      btn.title = `Map ${here}, the world you're in, without generating anything`;
+    }
+  }
+  function progressText(seed, info) {
+    const secs = Number.isFinite(info && info.elapsed) ? ` ${Math.round(info.elapsed)} s` : '';
+    const step = info && info.step ? `: ${info.step}` : '';
+    return `${seed === HERE ? 'Mapping' : 'Generating'} ${seedLabel(seed)}…${secs}${step}`;
+  }
+  async function generate(seed) {
+    const token = ++ATLAS.token, mine = () => token === ATLAS.token;
+    setGenerating(true, seed);
+    try { history.replaceState(null, '', `#${seed}`); } catch (e) { /* the page's address can't change here */ }
+    showStatus(progressText(seed, null));
+    try {
+      for (let round = 0; mine(); round++) {
+        if (round) await wait(1500);
+        if (!mine()) return;
+        const { status, body } = await getJSON(`/world?seed=${seedParam(seed)}`);
+        if (!mine()) return;
+        if (status === 200) {
+          const w = decodeFlowmap(body);
+          w.atlas = true;
+          w.seed = w.seed || seed;
+          if (!w.preset && ATLAS.info) w.preset = ATLAS.info.preset || '';
+          resetDetail(w.seed);
+          setWorld(w);
+          setHowto(false);
+          const v = ATLAS.pendingView;
+          ATLAS.pendingView = null;
+          if (v && v.seed === seed && v.x != null) {
+            S.cx = v.x; S.cz = v.z;
+            if (v.s) S.s = Math.max(S.minS, Math.min(S.maxS, v.s));
+            markDirty();
+          }
+          showStatus(`${seedLabel(seed, true)} is ready. Zoom in for 2 m detail.`, 5000);
+          return;
+        }
+        if (status !== 202 || !body) throw new Error(`Your game answered ${status} when asked for ${seedLabel(seed)}.`);
+        let info = body;
+        ATLAS.info = info;
+        // Wait for this seed: poll the atlas until it's built (or fails); if the game is busy with another seed,
+        // ask for ours again, which queues or starts it.
+        while (mine()) {
+          if (info.state === 'failed' && (!info.seed || info.seed === seed)) throw new Error(info.error || `Your game couldn't build ${seedLabel(seed)}.`);
+          if (info.state !== 'generating' || info.seed !== seed) break;
+          showStatus(progressText(seed, info));
+          await wait(1500);
+          if (!mine()) return;
+          const next = await getJSON('/atlas');
+          if (next.status !== 200 || !next.body) throw new Error(`Your game answered ${next.status} while building ${seedLabel(seed)}.`);
+          info = next.body;
+          ATLAS.info = info;
+        }
+      }
+    } catch (e) {
+      if (mine()) showStatus(e.message || String(e), 0, true);
+    } finally {
+      if (mine()) setGenerating(false);
+    }
+  }
+  async function startAtlas() {
+    if (!(await detectAtlas())) return;
+    const info = ATLAS.info;
+    $('seedForm').hidden = false;
+    $('howtoFile').hidden = true;
+    $('howtoAtlas').hidden = false;
+    $('atlasWith').textContent = info.rivers_from ? ` (rivers from ${info.rivers_from}${info.preset ? `, Riverheim preset ${info.preset}` : ''})` : '';
+    $('loadBtn').textContent = 'Open a file';
+    updateHere();
+    const worlds = Array.isArray(info.worlds) ? info.worlds : [];
+    ATLAS.twoWorlds = worlds.includes('riverheim') && worlds.includes('valheim');
+    $('worldPick').hidden = !ATLAS.twoWorlds;
+    const fitWorlds = key => (ATLAS.twoWorlds ? key : baseSeed(key)); // one generator: plain seeds only
+    if (S.w) updateMeta();
+    const want = parseHash(location.hash);
+    if (want) {
+      want.seed = fitWorlds(want.seed);
+      ATLAS.pendingView = want;
+      generate(want.seed);
+    } else if (info.seed && (info.state === 'ready' || info.state === 'generating')) {
+      generate(fitWorlds(info.seed));
+    } else {
+      $('seedInput').focus({ preventScroll: true });
+    }
+    // Ask the atlas how it is every 10 s while the page is open, even in a background tab: that keeps it open (the
+    // game closes it after 3 minutes without requests) and the "This world" button in step with the game.
+    // Leaving the page says goodbye, so the game can close it sooner (a reload asks again in time to keep it).
+    addEventListener('pagehide', () => {
+      try { navigator.sendBeacon('/bye'); } catch (e) { /* the game closes it on its own after 3 minutes */ }
+    });
+    setInterval(async () => {
+      if (ATLAS.busy) return; // generating polls more often anyway
+      try {
+        const { status, body } = await getJSON('/atlas');
+        if (status === 200 && body && body.atlas) { ATLAS.info = body; updateHere(); }
+      } catch (e) { /* the game is closed or busy; the page keeps what it has */ }
+    }, 10000);
+  }
+
+  // ---- wiring
+  const pickFile = () => $('fileInput').click();
+  $('loadBtn').addEventListener('click', pickFile);
+  $('loadBtn2').addEventListener('click', pickFile);
+  $('loadBtn3').addEventListener('click', pickFile);
+  $('fileInput').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
+  $('howBtn').addEventListener('click', () => setHowto($('howto').hidden));
+  $('howClose').addEventListener('click', () => setHowto(false));
+  $('statusClose').addEventListener('click', () => { $('status').hidden = true; });
+  $('seedForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const input = $('seedInput'), seed = input.value.replace(/\s+/g, '');
+    if (!SEED_RE.test(seed)) {
+      input.setAttribute('aria-invalid', 'true');
+      showStatus('A seed is 1 to 10 letters or digits, like the ones Valheim shows.', 5000, true);
+      return;
+    }
+    input.removeAttribute('aria-invalid');
+    input.value = seed;
+    ATLAS.pendingView = null;
+    generate(seedKey(seed));
+  });
+  // Switching generator rebuilds the seed on show (or being built) the other way, looking at the same spot.
+  $('worldPick').addEventListener('change', () => {
+    const seed = $('seedInput').value.replace(/\s+/g, '');
+    const showing = S.w && S.w.atlas && S.w.seed && S.w.seed !== HERE;
+    if (!SEED_RE.test(seed) || !(showing || ATLAS.busy)) return;
+    const key = seedKey(seed);
+    ATLAS.pendingView = showing && baseSeed(S.w.seed) === seed ? { seed: key, x: S.cx, z: S.cz, s: S.s } : null;
+    generate(key);
+  });
+  $('tideBtn').addEventListener('click', () => setTideView(!S.tideView));
+  for (const input of document.querySelectorAll('input[name="tmode"]')) {
+    input.addEventListener('change', e => {
+      S.tideMode = e.target.value;
+      TV.key = '';
+      updateLegend();
+      updateGauge();
+      updateReadout();
+      markDirty();
+    });
+  }
+  for (const input of document.querySelectorAll('input[name="speed"]')) {
+    input.addEventListener('change', e => {
+      S.speed = parseFloat(e.target.value) || 5;
+      updateSpeedNote();
+      markDirty();
+    });
+  }
+  $('seedInput').addEventListener('input', e => e.target.removeAttribute('aria-invalid'));
+  $('hereBtn').addEventListener('click', () => { ATLAS.pendingView = null; generate(HERE); });
+
+  let dragDepth = 0;
+  const hasFiles = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+  window.addEventListener('dragenter', e => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth++; $('drop').hidden = false; });
+  window.addEventListener('dragover', e => { if (hasFiles(e)) e.preventDefault(); });
+  window.addEventListener('dragleave', e => { if (!hasFiles(e)) return; if (--dragDepth <= 0) { dragDepth = 0; $('drop').hidden = true; } });
+  window.addEventListener('drop', e => {
+    e.preventDefault();
+    dragDepth = 0;
+    $('drop').hidden = true;
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) loadFile(f);
+  });
+
+  const layerIds = { layRivers: 'rivers', laySea: 'sea', layTide: 'tide', layWhite: 'white', layPools: 'pools' };
+  for (const [id, key] of Object.entries(layerIds)) {
+    $(id).addEventListener('change', e => {
+      S.layers[key] = e.target.checked;
+      if (key === 'tide') $('tideKey').hidden = !e.target.checked;
+      markDirty();
+    });
+  }
+  $('layAnim').checked = S.animate;
+  $('layAnim').addEventListener('change', e => { S.animate = e.target.checked; markDirty(); });
+
+  $('zoomIn').addEventListener('click', () => zoomAt(S.W / 2, S.H / 2, 1.6));
+  $('zoomOut').addEventListener('click', () => zoomAt(S.W / 2, S.H / 2, 1 / 1.6));
+  $('zoomFit').addEventListener('click', fit);
+  $('zoomYou').addEventListener('click', () => {
+    if (!S.w || !S.w.you) return;
+    [S.cx, S.cz] = S.w.you;
+    S.s = Math.max(S.s, Math.min(S.maxS, 0.35));
+    markDirty();
+  });
+
+  const setPlaying = on => {
+    S.playing = on;
+    $('playBtn').setAttribute('aria-pressed', String(on));
+    $('playBtn').setAttribute('aria-label', on ? 'Pause the tides' : 'Play the tides');
+    $('playIcon').innerHTML = on ? '<path d="M3.5 2.5h3.2v11H3.5zM9.3 2.5h3.2v11H9.3z"></path>' : '<path d="M4 2.5v11l9.5-5.5z"></path>';
+  };
+  $('playBtn').addEventListener('click', () => setPlaying(!S.playing));
+  $('daySlider').addEventListener('input', e => {
+    setTime(Math.floor(S.D) + Math.min(0.9999, Math.max(0, parseFloat(e.target.value) || 0)));
+  });
+  // A day of the lunar month: whole days on, so the time of day stays.
+  $('moonSlider').addEventListener('input', e => {
+    const w = S.w;
+    if (!w || !w.lunar) return;
+    const want = parseInt(e.target.value, 10) || 0, today = Math.floor(S.tide.moon * w.monthDays + 1e-6);
+    setTime(S.D + (want - today));
+  });
+
+  const pointers = new Map();
+  let downAt = null, moved = false;
+  flow.addEventListener('pointerdown', e => {
+    flow.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+    downAt = { x: e.offsetX, y: e.offsetY };
+    moved = false;
+    flow.classList.add('dragging');
+  });
+  flow.addEventListener('pointermove', e => {
+    const prev = pointers.get(e.pointerId);
+    if (!prev) {
+      if (e.pointerType === 'mouse') { S.hover = toWorld(e.offsetX, e.offsetY); updateReadout(); }
+      return;
+    }
+    const cur = { x: e.offsetX, y: e.offsetY };
+    if (pointers.size === 1) {
+      if (Math.abs(cur.x - downAt.x) + Math.abs(cur.y - downAt.y) > 4) moved = true;
+      if (moved) {
+        S.cx -= (cur.x - prev.x) / S.s;
+        S.cz += (cur.y - prev.y) / S.s;
+        settleSoon();
+        markDirty();
+      }
+    } else if (pointers.size === 2) {
+      moved = true;
+      const other = [...pointers.entries()].find(([id]) => id !== e.pointerId)[1];
+      const before = Math.hypot(prev.x - other.x, prev.y - other.y), after = Math.hypot(cur.x - other.x, cur.y - other.y);
+      const mx = (cur.x + other.x) / 2, my = (cur.y + other.y) / 2;
+      S.cx -= (cur.x - prev.x) / 2 / S.s;
+      S.cz += (cur.y - prev.y) / 2 / S.s;
+      if (before > 4) zoomAt(mx, my, after / before);
+      settleSoon();
+      markDirty();
+    }
+    pointers.set(e.pointerId, cur);
+  });
+  const endPointer = e => {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.delete(e.pointerId);
+    if (pointers.size) return;
+    flow.classList.remove('dragging');
+    if (!moved && downAt) { S.hover = toWorld(downAt.x, downAt.y); updateReadout(); }
+    downAt = null;
+  };
+  flow.addEventListener('pointerup', endPointer);
+  flow.addEventListener('pointercancel', endPointer);
+  flow.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && !pointers.size) { S.hover = null; updateReadout(); } });
+  flow.addEventListener('wheel', e => {
+    e.preventDefault();
+    const unit = e.deltaMode === 1 ? 0.05 : e.deltaMode === 2 ? 1 : 0.0015;
+    zoomAt(e.offsetX, e.offsetY, Math.exp(-e.deltaY * unit));
+    settleSoon();
+  }, { passive: false });
+
+  window.addEventListener('keydown', e => {
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'BUTTON' || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === '+' || e.key === '=') zoomAt(S.W / 2, S.H / 2, 1.6);
+    else if (e.key === '-' || e.key === '_') zoomAt(S.W / 2, S.H / 2, 1 / 1.6);
+    else if (e.key === '0') fit();
+    else if (e.key === ' ') { e.preventDefault(); setPlaying(!S.playing); }
+    else if (e.key === 't' || e.key === 'T') setTideView(!S.tideView);
+  });
+
+  new ResizeObserver(() => {
+    const r = stage.getBoundingClientRect();
+    S.W = Math.max(1, r.width);
+    S.H = Math.max(1, r.height);
+    S.dpr = Math.min(2, window.devicePixelRatio || 1);
+    for (const c of [base, marks, flow]) {
+      c.width = Math.round(S.W * S.dpr);
+      c.height = Math.round(S.H * S.dpr);
+    }
+    if (!S.fitted) fit();
+    markDirty();
+  }).observe(stage);
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+    last = now;
+    if (S.playing) setTime(S.D + (dt * S.speed) / GAME_DAY); // the time of day and the moon both run on
+    if (S.dirty) redraw();
+    if (S.animate) {
+      stepFlow(dt, Math.pow(0.9, dt * 60));
+      drawMarks(dt);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  buildStaticUI();
+  setWorld(makeDemo());
+  setHowto(true);
+  requestAnimationFrame(frame);
+  startAtlas();
+})();
+</script>
