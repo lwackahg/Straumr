@@ -74,6 +74,10 @@ Everything is in `BepInEx/config/wackah.straumr.cfg`, and most settings apply wi
 - The sea is one flat sheet per 64 m zone, raised as a whole, so neighbouring zones can differ by a few centimetres.
 - Worlds much bigger than Valheim's standard size aren't supported yet.
 
+## Problems or ideas?
+
+Message me on [Discord](https://discord.com/users/220007226121781248). Please send your `BepInEx/LogOutput.log` (Thunderstore Mod Manager / r2modman: Settings > Browse profile folder) and say which other mods you run.
+
 ## Thanks
 
 Inspired by the river worlds of Riverheim and the streams and waterfalls of Rivers and Lakes. Go give them a look:
