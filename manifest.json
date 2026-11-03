@@ -1,8 +1,8 @@
 {
   "name": "Straumr",
-  "version_number": "0.1.1",
+  "version_number": "0.1.2",
   "website_url": "https://github.com/lwackahg/Straumr",
-  "description": "Living water: rivers that flow, white-water rapids, sea currents, tides that rise and fall, whirlpools, seasons and snowmelt, and an API for other mods. Works on its own; detects Riverheim and Rivers and Lakes. Beta.",
+  "description": "Living water: flowing rivers with a surface that moves, white-water rapids, sea currents, tides that rise and fall, whirlpools, seasons and snowmelt, and an API for other mods. Works on its own; detects Riverheim and Rivers and Lakes. Beta.",
   "dependencies": [
     "denikson-BepInExPack_Valheim-5.4.2360"
   ]

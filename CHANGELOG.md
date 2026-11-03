@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.1.2
+
+0.1.1 made the current trustworthy; 0.1.2 lets you see it and feel it. Checked against 0.1.1 on a Riverheim world and on Valheim's own world (see *How it was checked* in the README).
+
+**The water's surface**
+- Ripples and sun glints move with the current: a thin sheet with its own shader that rides the game's waves and the tide (`[Surface]`). It shows from 0.05 m/s, in full from 0.5, and fades to half on windy open water. It steps aside under NorgerWater, on frozen water, on Rivers and Lakes' water and toward the Deep North. `straumr overlay` turns it off and on.
+- Foam fades where it meets a bank or a rock instead of ending on a hard line (`[Flecks] SoftEdges`). Where the ripples show, slow water carries less foam; still water keeps all of its.
+- River sound starts at slower water and grows fuller the deeper the river.
+
+**Rivers and lakes**
+- Far fewer springs and drains. On the Riverheim world: springs 182 to 71 (none left at lakes), spots where the current meets itself head-on 187 to 116, reversals 1,229 to 887.
+- Lakes drain through their real way out, and a lake's outlets no longer pour water back into it.
+- The long way round a loop, or a lake's second way out, drifts along instead of standing dead.
+- Rocks bend the water by the part of them that's in the water, measured at the waterline, not by their whole size. A rock whose shape the game carries twice is counted once.
+- Water nothing feeds lies still where it used to move only because of a flaw in the old calculation (river water under 0.05 m/s: 11% to 15%).
+
+**Weather**
+- Wind drifts lakes and broad slow reaches too, not only the sea, and a storm pushes harder than a breeze (`[Currents] StormDrift`).
+- Storm surge: a storm raises the sea up to 0.3 m on top of the tide (`[Currents] StormSurge`).
+- Fixed: the current dropped out on every wave crest more than 30 cm above the still sea.
+
+**In the water**
+- Wading: the current pushes you downstream as you wade (`[Currents] Wading`).
+- Undertow: fast water through a deep, narrow slot now and then pulls swimmers under for a moment (`[Currents] Undertow`).
+- Swimming effort with or against the current, optional and off by default (`SwimWithCurrent`, `SwimAgainstCurrent`).
+- Waves carry floating things the way they run, in toward the beach over the shallows, and in a gale the surf pushes swimmers (`[Currents] WaveDrift`).
+- Felled logs float and drift with the current and the waves (`[Currents] LogDrift`).
+
+**Boats**
+- A boat drifting free in a river swings round to lie along the current (`[Currents] BoatYaw`), and the current's turn on a boat is halved while someone steers.
+- A boat left empty rides as if at anchor (`[Currents] AnchorEmptyBoats`). Jumping off into a river no longer lets the current carry the boat away from you.
+- Boat speed under the minimap while you're aboard: through the water, over the ground, and what the current adds or takes (`[Hud] BoatSpeed`).
+
+**For mod makers**
+- `WaterLevel` and `Sample`'s `SurfaceHeight` give the water as it stands, tide and storm surge easing in; `TideHeight` is where it's heading.
+- `Sample` and `Velocity` agree on another mod's water, and another mod's lakes never run white.
+
+**Diagnostics**
+- `straumr here` names the rocks bending the current where you stand, and says when a stretch of river carries no source's water (a divide, or draining one way).
+- `straumr selftest` checks the current's consistency near you (PASS, or a NOTE where rivers meet across wide water).
+
 ## 0.1.1
 
 Most of this release makes the water more correct, then measures it: a whole Riverheim world was checked before and after (see the README).

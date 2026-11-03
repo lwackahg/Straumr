@@ -1,7 +1,7 @@
 # Straumr API
 
 Straumr works out how the water moves on Riverheim (and Valheim) worlds: river currents, the sea's gyres, tides,
-tidal races, whirlpools, rips, white water, floods and the winter freeze. It ships no assets of its own; this API is
+tidal races, whirlpools, rips, white water, floods and the winter freeze. It ships no models or textures (only its own shaders, built into the dll); this API is
 how other mods (water wheels, mills, fishing, sailing AI) build on it, with no reflection.
 
 **Design rule:** Straumr exposes physical properties (velocity, depth, power density, tide height and rate), not
@@ -58,9 +58,9 @@ until the new world's field is built; nothing of the last world is kept to answe
 | `Depth` | m | water depth |
 | `Froude` | | `Speed / sqrt(9.81 * max(Depth, 0.5))`; above ~1 the flow is supercritical |
 | `Whiteness` | 0..1 | how white the water runs: the same measure that tumbles swimmers (Froude-based, or a whirlpool's eye) |
-| `TideHeight` | m | the tide's rise above the sea's usual level here (negative below) |
-| `TideRate` | m/s | how fast the tide is raising the water (+ rising). Tiny: a few mm/s at most |
-| `SurfaceHeight` | m | the still water's surface here, absolute (no waves): the sea's level with the tide in, or another mod's lake's level |
+| `TideHeight` | m | where the tide and any storm surge are taking the water here, above the sea's usual level (negative below); the water eases there at about 1 cm/s, so in a rising storm `SurfaceHeight` lags it |
+| `TideRate` | m/s | how fast the tide is raising the water (+ rising). Tiny: a few mm/s at most. The tide's own rate: a storm's surge isn't in it |
+| `SurfaceHeight` | m | the still water's surface here, absolute (no waves): the sea's level as it stands now, tide and any storm surge in, or another mod's lake's level |
 | `TidalStream` | m/s | the sea's tidal stream here, + flood, - ebb, as over deep water (shallows drag it back) |
 | `Openness` | 0..1 | 0 in a river's channel, 1 on wide open water |
 | `Kind` | | `None, River, Lake, Sea, TidalRace, Rapids, Rip, Eddy, Whirlpool` |
@@ -95,7 +95,7 @@ false), and Straumr's currents switched off (`[Currents] Enabled = false`: `InWa
 Vector3 v   = StraumrApi.Velocity(pos);                 // Sample(pos).Velocity, cheaper
 float   wm2 = StraumrApi.KineticPowerDensity(pos);      // 0.5 * 1000 * v^3, W/m2
 float   h   = StraumrApi.TideHeight(pos);               // m, water or not (works on the shore too)
-float   lvl = StraumrApi.WaterLevel(pos);               // absolute still sea-level surface here, tide in (not Valheim's fixed 30)
+float   lvl = StraumrApi.WaterLevel(pos);               // absolute still sea-level surface here, tide and storm surge in (not Valheim's fixed 30)
 float   ph  = StraumrApi.TidePhase(pos);                // -1 full ebb .. +1 full flood, later behind straits
 float   min = StraumrApi.MinutesToTideTurn(pos);        // real minutes to the next slack here
 Vector3 fl  = StraumrApi.FloodStream(pos);              // flood-tide stream at an average peak (ebb = -fl); anywhere once the sea is solved
@@ -116,9 +116,10 @@ sea, keeping the way a river is drawn unless the other way is less than half as 
 
 **The water's level.** Straumr raises and lowers the sea (and everything at sea level, rivers and lakes included)
 with the tide, so the water's surface is often not Valheim's fixed 30 m. Anything placed or spawned at the water's
-edge should go by `WaterLevel(pos)`: the still-water surface there in metres, absolute, tide included, waves left out.
-It's 30 (Valheim's level) with no world, with tides off (`[Currents] TideRange = 0`), in a freeze, before the sea is
-solved and on a dedicated server. Rivers and Lakes' water above the sea isn't covered: where `Sample(pos).Source` is
+edge should go by `WaterLevel(pos)`: the still-water surface there in metres, absolute, as the water stands now (tide
+and any storm surge included; it eases toward them at about a centimetre a second), waves left out. It's 30 (Valheim's
+level) with no world, with tides and surge off (`[Currents] TideRange = 0` and `StormSurge = 0`), in a freeze, before
+the sea is solved and on a dedicated server. Rivers and Lakes' water above the sea isn't covered: where `Sample(pos).Source` is
 `OtherWater`, that lake's level is in `Sample(pos).SurfaceHeight`; its streams aren't sampled at all.
 
 ## Example: a water wheel
@@ -231,8 +232,8 @@ StraumrApi.FreezeChanged     += frozen => Log(frozen ? "the water froze" : "the 
   sea. `FloodChanged` and `FreezeChanged` never fire there: the rivers' stage (floods, the freeze) is worked out on
   players' games.
 - **Other mods' water.** Rivers and Lakes' streams are its own and aren't sampled; its lakes are, where Straumr moves
-  them (a stream pouring in, wind drift on a big lake), with `Source == OtherWater` and `Kind == Lake`. Its still or
-  frozen lakes read as no water. For those, `y` matters: the point must be within 3 m of the lake's surface.
+  them (a stream pouring in, wind drift on a big lake), with `Source == OtherWater` and `Kind == Lake`. Away from Straumr's own
+  water its still or frozen lakes read as no water; over Straumr's water they read as water with no current. For those, `y` matters: the point must be within 3 m of the lake's surface.
 - **It's a model.** Ideal flow, hydraulic geometry and a solved sea, tuned to feel right and to agree with real rivers'
   orders of magnitude, not a CFD solution. Expect the right direction and speed to within tens of percent;
   `Confidence` says where it's rougher.
@@ -241,4 +242,5 @@ StraumrApi.FreezeChanged     += frozen => Log(frozen ? "the water froze" : "the 
   `[Diagnostics] PerfCounters = true` and type `straumr perf` in the console. `DownstreamPath` and `RiverMouth` walk a
   river's line: now and then, not every frame.
 - **Units.** Metres, seconds, m/s, W/m2. Tide rates are tiny (mm/s); by default the open sea's tide rises and falls
-  ±0.6 m on an average tide (Straumr's `TideRange`), up to ±0.8 m at spring tides.
+  ±0.6 m on an average tide (Straumr's `TideRange`), up to ±0.8 m at spring tides, and a full storm adds up to 0.3 m on top
+  (`StormSurge`).
