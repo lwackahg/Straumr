@@ -188,6 +188,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .key i.foam { background: #ffffff; box-shadow: 0 0 0 1px var(--line); height: 5px; }
 .key i.tide { width: 34px; height: 8px; background: linear-gradient(90deg, rgba(107, 44, 145, 0.45), rgba(212, 85, 58, 0.75), rgba(255, 226, 140, 0.95)); }
 .key i.pool { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #7fb6c4; border-right-color: transparent; }
+.key i.raised { background: rgb(96, 168, 255); height: 8px; }
+.key i.plain { background: rgb(72, 214, 180); height: 8px; }
+.floodkeys { display: contents; }
 .layers .sw.ring { border-radius: 50%; background: transparent; border: 2px solid #bfe9f2; border-right-color: transparent; }
 
 /* Tide view: the button, the gauge panel on the map, its keys */
@@ -266,9 +269,45 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .cellbox dd.warn { color: #f0b48a; }
 .cellbox .src { margin: 6px 0 0; font-size: 11px; line-height: 1.45; color: var(--map-muted); }
 .stage[data-pick="open"] .readout { display: none; }
+/* The water players build: the picked item's level and time, in its box */
+.wtools { display: grid; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--map-line); font-size: 12px; }
+.wtools .wrow { display: flex; align-items: center; gap: 8px; }
+.wtools .wrow > span { color: var(--map-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; min-width: 42px; }
+.wtools input[type="range"] { flex: 1; min-width: 0; accent-color: var(--map-accent); }
+.wtools output { font-family: var(--font-data); font-variant-numeric: tabular-nums; min-width: 84px; text-align: right; }
+.wtools label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.wtools input[type="checkbox"] { accent-color: var(--map-accent); margin: 0; }
+.wtools button { background: transparent; border: 1px solid var(--map-line); color: var(--map-text); padding: 3px 8px; border-radius: 4px; font: inherit; cursor: pointer; }
+.waterkeys { display: contents; }
+.key i.w-pool { background: rgba(70, 150, 255, 0.75); height: 8px; }
+.key i.w-claim { background: rgba(255, 255, 255, 0.25); height: 8px; }
+.key i.w-wall { background: linear-gradient(90deg, rgb(214, 206, 192) 60%, #ffb347 60%); height: 4px; }
+.key i.w-round { background: #ff6fd8; width: 8px; height: 8px; transform: rotate(45deg); }
+.key i.w-below { background: linear-gradient(90deg, #ff963c, #ebf0f5, #50a0ff); height: 4px; }
+.key i.w-kept { background: rgba(64, 214, 196, 0.8); height: 8px; }
+.key i.w-coffer { background: rgba(214, 172, 110, 0.8); height: 8px; }
+
+/* Fords, water power and drift: the drift tool under the zoom, and their keys */
+.drift { display: grid; gap: 6px; padding: 4px; max-width: 282px; }
+.drift .row { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+.drift button { background: transparent; border: 1px solid transparent; color: var(--map-text); padding: 5px 8px; }
+.drift button:hover { border-color: var(--map-line); }
+.drift button[aria-pressed="true"] { background: var(--map-accent); border-color: var(--map-accent); color: #1b1006; }
+.drift kbd { font-family: var(--font-data); font-size: 11px; opacity: 0.7; }
+.drift .seg span { padding: 4px 8px; }
+.drift-note { margin: 0; padding: 0 4px 4px; font-size: 11.5px; line-height: 1.45; color: var(--map-muted); }
+#flow.aiming { cursor: crosshair; }
+.key i.ford { background: rgb(141, 240, 181); height: 4px; }
+.key i.ford-low { background: repeating-linear-gradient(90deg, rgb(141, 240, 181) 0 4px, transparent 4px 7px); height: 4px; }
+.key i.foot-firm { background: rgba(80, 220, 160, 0.75); height: 8px; }
+.key i.foot-push { background: rgba(255, 170, 70, 0.85); height: 8px; }
+.key i.power { width: 9px; height: 9px; border-radius: 1px; background: #ffd25e; transform: rotate(45deg); }
+.key i.drift { background: #ffffff; height: 2px; }
+.extrakeys { display: contents; }
 
 @media (max-width: 640px) {
   .layers .dbg-toggle { border-top: 0; margin-top: 0; padding-top: 3px; }
+  .drift { max-width: none; }
   .dbg { width: auto; max-height: 40vh; }
   .cellbox { top: auto; bottom: 12px; width: auto; right: max(12px, env(safe-area-inset-right, 0px)); max-height: 50%; }
   .wordmark { font-size: 24px; }
@@ -326,6 +365,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       <div class="cellbox-head"><h3 id="cellTitle">4 m cell</h3><button type="button" class="close" id="cellClose" aria-label="Close (Esc)">&times;</button></div>
       <dl id="cellList"></dl>
       <p class="src" id="cellNote" hidden></p>
+      <div class="wtools" id="waterTools" hidden>
+        <label class="wrow" id="waterLevelRow"><span>Level</span><input type="range" id="waterLevel" min="0" max="1" step="0.05" aria-label="Draw the pool at this level"><output id="waterLevelText"></output></label>
+        <div class="wrow" id="waterFillRow"><button type="button" id="waterLive" title="Back to the pool's level and the reading now">Now</button><label><input type="checkbox" id="waterClaim" checked>Cells it can claim</label><label><input type="checkbox" id="waterFill">By fill level</label></div>
+        <label class="wrow" id="waterTimeRow"><span>Time</span><input type="range" id="waterTime" min="0" max="1" step="1" aria-label="Back through the readings the atlas has had, or the lab breach's seconds"><output id="waterTimeText"></output></label>
+      </div>
     </section>
 
     <div class="tools">
@@ -333,8 +377,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         <label><input type="checkbox" id="layRivers" checked><span class="sw" style="background:#3f86a3"></span>Rivers</label>
         <label><input type="checkbox" id="laySea" checked><span class="sw" style="background:#59c0c7"></span>Sea currents</label>
         <label><input type="checkbox" id="layTide"><span class="sw" style="background:#d4553a"></span>Tidal races</label>
+        <label title="Where raised rivers stand over land, and the ground the spring high water floods"><input type="checkbox" id="layFlood"><span class="sw" style="background:linear-gradient(90deg, rgb(96,168,255) 50%, rgb(72,214,180) 50%)"></span>River levels</label>
         <label><input type="checkbox" id="layPools" checked><span class="sw ring"></span>Whirlpools</label>
         <label><input type="checkbox" id="layWhite" checked><span class="sw" style="background:#ffffff"></span>White water</label>
+        <label title="Where a river can be waded across: under the depth you'd start swimming at, all the way over"><input type="checkbox" id="layFords"><span class="sw" style="background:rgb(141,240,181)"></span>Fords</label>
+        <label title="The strongest water per area, for water wheels: the kinetic power it carries through each square metre (½ρv³)"><input type="checkbox" id="layPower"><span class="sw" style="background:#ffd25e"></span>Water power</label>
+        <label title="Dams and their pools, kept pools, cofferdams and the river below each dam, as the game runs them (click one for its numbers)"><input type="checkbox" id="layWorks" checked><span class="sw" style="background:rgb(70,150,255)"></span>Built water</label>
         <label><input type="checkbox" id="layAnim" checked><span class="sw" style="background:transparent;border:1px solid var(--map-muted)"></span>Animate</label>
         <label class="dbg-toggle" title="Debug overlays (D)"><input type="checkbox" id="layDebug"><span class="sw" style="background:transparent;border:1px dashed var(--map-accent)"></span>Debug <kbd>D</kbd></label>
       </div>
@@ -343,6 +391,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         <button type="button" id="zoomOut" aria-label="Zoom out">&minus;</button>
         <button type="button" id="zoomFit" aria-label="Show the whole world">Fit</button>
         <button type="button" id="zoomYou" aria-label="Go to where you are" hidden>You</button>
+      </div>
+      <div class="drift glass" role="group" aria-label="Drift from a point">
+        <div class="row">
+          <button type="button" id="driftBtn" aria-pressed="false" title="Drift: press, then click the water to see where something floating goes (R)">Drift <kbd>R</kbd></button>
+          <div class="seg" id="driftPick" role="radiogroup" aria-label="How long it drifts">
+            <label><input type="radio" name="dmin" value="5"><span>5 min</span></label>
+            <label><input type="radio" name="dmin" value="15" checked><span>15</span></label>
+            <label><input type="radio" name="dmin" value="60"><span>60</span></label>
+          </div>
+        </div>
+        <p class="drift-note" id="driftNote" aria-live="polite" hidden></p>
       </div>
       <div class="chip glass" id="detailChip" role="status" hidden><span id="chipText"></span><div class="meter" id="chipMeter"><i id="chipFill"></i></div></div>
       <section class="dbg glass" id="dbgPanel" aria-labelledby="dbgTitle" hidden>
@@ -379,13 +438,16 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         <div class="row"><button type="button" class="primary" id="loadBtn2">Choose file</button></div>
         <p class="note">Dedicated server: set <code>[Diagnostics] WorldGenCommand = flowmap</code> in <code>wackah.straumr.cfg</code>; the file lands in the server's <code>BepInEx/config</code>. The file stays in this browser and is never uploaded.</p>
         <p class="note">The map shows the world's shape and rivers (Riverheim's or Valheim's) and Straumr's water physics. Rivers and Lakes' streams aren't drawn.</p>
+        <p class="note">A flow map exported in a world carries the water players built there too (Built water): its dams, kept pools and cofferdams as they stood, and a lab server's last <code>damflood</code>.</p>
         <p class="gen"><b>Seed generator:</b> in Valheim (the main menu is fine), open the console (<code>F5</code>), type <code>devcommands</code>, then <code>straumr atlas</code>. It opens this page from your own game and builds any seed with your mods' settings.</p>
       </div>
       <div id="howtoAtlas" hidden>
         <h2>Generate a world</h2>
-        <p>Type a seed in the bar above and press Generate. Your game builds it with its own mods and settings<span id="atlasWith"></span>, usually in 20 to 90 seconds, then shows the whole world.</p>
+        <p>Type a seed in the bar above and press Generate. Your game builds it with its own mods and settings<span id="atlasWith"></span>, usually in 40 to 110 seconds (the rivers' levels and flood plains are some 20 of them), then shows the whole world.</p>
         <p id="hereHint" hidden>Or press <b>This world</b> to map the world you're in, without generating anything.</p>
         <p>Zoom in and the game fills in 2&nbsp;m ground and 4&nbsp;m currents, square by square.</p>
+        <p class="note">Fords, Water power and Drift (<code>R</code>): where a river can be waded across at the tide on the clock, where the water carries the most power for a wheel, and where something floating goes.</p>
+        <p class="note">Built water: in the world you're in (<b>This world</b>), its dams with their pools, walls, crests and ways round, its kept pools and cofferdams, and the river below each dam (its share of the flow, the surge), live from the game every 1.5 s. Click one for its numbers, a level to draw its pool at, and a time scrubber back through what the page has seen.</p>
         <p class="note">Water looks wrong somewhere? Press <code>D</code> for the debug view (which river owns each 4&nbsp;m cell, its head, bank and line) and click a cell for its numbers.</p>
         <p class="note">Shows the world's shape and rivers (Riverheim's or Valheim's) and Straumr's water physics. Rivers and Lakes' streams aren't shown: its generator makes them for a real world.</p>
         <p class="note">Until then this is a made-up sample island. You can also open a saved flow map: <button type="button" class="link" id="loadBtn3">choose a file</button>.</p>
@@ -475,6 +537,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         <span class="key"><i class="foam"></i>White water (rapids)</span>
         <span class="key" id="tideKey" hidden><i class="tide"></i><span id="tideKeyText">Tidal race at full flood</span></span>
         <span class="key" id="poolKey" hidden><i class="pool"></i>Whirlpool: spins up with its tide, still at slack</span>
+        <span class="floodkeys" id="floodKeys" hidden></span>
+        <span class="extrakeys" id="extraKeys" hidden></span>
+        <span class="waterkeys" id="waterKeys" hidden></span>
       </div>
       <p class="note" id="speedNote"></p>
     </div>
@@ -531,6 +596,372 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     return out;
   }
 
+  // How high the rivers stand (RiverLevels; newer files with it on): per planned 64 m zone, at the four 32 m ground
+  // cells whose middles lie in it (west then east, the south pair first), in an ordinary season and at the spring high
+  // water, mm above the sea, as far as the zone's banks allow (the slopes between zones only lower it). Spread here
+  // onto the ground grid, still in whole mm (so the ground's dm meets them as Straumr wrote them), 0 where no river's
+  // water reaches, with how many cells the raised rivers cover (ground above the sea, at or below the ordinary level)
+  // and the spring flood plain (above it, at or below the spring high water). Null for older files, maps without the levels and a broken section:
+  // the map loads without them.
+  function decodeLevels(L, G) {
+    if (!L || !(L.count > 0) || L.usual == null || L.springHigh == null || G.cell * 2 !== 64) return null;
+    try {
+      const m = L.count | 0, n = G.n;
+      const zx = typedFrom(L.zx, Int32Array, m, 'levels.zx'), zz = typedFrom(L.zz, Int32Array, m, 'levels.zz');
+      const u = typedFrom(L.usual, Uint16Array, m * 4, 'levels.usual'), h = typedFrom(L.springHigh, Uint16Array, m * 4, 'levels.springHigh');
+      const usual = new Uint16Array(n * n), high = new Uint16Array(n * n);
+      for (let k = 0; k < m; k++) {
+        // the first cell whose middle lies in the zone, as Straumr counts it
+        const c0 = Math.ceil((zx[k] * 64 - 32 - G.origin) / G.cell - 0.5), r0 = Math.ceil((zz[k] * 64 - 32 - G.origin) / G.cell - 0.5);
+        for (let c = 0; c < 4; c++) {
+          const col = c0 + (c & 1), row = r0 + (c >> 1);
+          if (col < 0 || row < 0 || col >= n || row >= n) continue;
+          usual[row * n + col] = u[k * 4 + c];
+          high[row * n + col] = h[k * 4 + c];
+        }
+      }
+      const out = { usual, high, raised: 0, plain: 0 };
+      for (let i = 0; i < n * n; i++) {
+        if (!high[i]) continue;
+        const k = floodIn(out, i, G.height[i] / 10);
+        if (k === 2) out.raised++;
+        else if (k === 3) out.plain++;
+      }
+      return out;
+    } catch (e) {
+      return null;
+    }
+  }
+  // Ground h (m above the sea) against its river's level in an ordinary season and at the spring high water: 1 under
+  // water at the sea's level already, 2 under the raised river in an ordinary season, 3 the flood plain (Straumr's
+  // rule: usual < ground <= spring high), 0 above it.
+  function floodClass(h, usual, high) {
+    if (h < 0) return 1;
+    if (h <= usual) return 2;
+    return h <= high ? 3 : 0;
+  }
+  // The same for ground h in cell i of the levels' grid.
+  function floodIn(L, i, h) {
+    return floodClass(h, L.usual[i] / 1000, L.high[i] / 1000);
+  }
+  // The levels at a spot (its 32 m cell's), or null where no river's water reaches or the file has none.
+  function levelsAt(w, x, z) {
+    const L = w.levels, G = w.ground;
+    if (!L) return null;
+    const col = Math.floor((x - G.origin) / G.cell), row = Math.floor((z - G.origin) / G.cell);
+    if (col < 0 || row < 0 || col >= G.n || row >= G.n) return null;
+    const i = row * G.n + col;
+    return L.high[i] ? { usual: L.usual[i] / 1000, high: L.high[i] / 1000 } : null;
+  }
+
+  // ---- fords, water power and drift (Straumr 0.1.3+ maps; older ones have none of it)
+  // The wading numbers Straumr sent (Wading.cs): the depth the game starts the player swimming at (the player's swim
+  // depth less 0.4, read from the game's own player), the player's slowest pace on foot, and the rule's own numbers.
+  // Null in older maps; swim and pace null where the game had no player to read them from.
+  function decodeWading(o) {
+    if (!o || typeof o !== 'object') return null;
+    const num = v => (Number.isFinite(v) ? v : null);
+    const wd = { swim: num(o.swim), pace: num(o.pace), ankle: num(o.ankle), grip: num(o.grip), give: num(o.give), most: num(o.most), strength: num(o.strength) };
+    if (wd.ankle == null || wd.grip == null || wd.give == null || wd.most == null) return null;
+    if (wd.strength == null) wd.strength = 1;
+    return wd;
+  }
+  // The river points Straumr listed as shallow enough to wade across at some tide: `deep`, the deepest water across the
+  // river there at its usual level (m, at the sea's mean level). Null in older maps, or a broken section.
+  // The water players build (Straumr 0.1.3 on): the flow map's "water" block, and the atlas's /water for the world you're
+  // in. Dams with their pools (a 4 m footprint, e: the step of the pool's tables at which its water reaches each cell, 255
+  // never; v and a every step dh from h0), their walls on the half-metre raster (1 wall, 2 the water below it, 4 the face
+  // the pool's step stands in, 8 where its crest passes the water over), crest runs, way round, breach, gates and where
+  // the pool lets water out now; kept pools and cofferdams on the same raster (1 their own, 2 joined through, 4 the brim, 8
+  // the ring round the inside); the river below each dam with its share of the flow and the surge on it; the lab's last
+  // damflood. The same text again is the same arrays (the page asks every 1.5 s): each is decoded once. Null for older
+  // files; a broken block is left out rather than losing the map.
+  const NEVER = 255;
+  const B64 = new Map();
+  function typedOnce(s, Type, expect, label) {
+    let seen = B64.get(Type);
+    if (!seen) B64.set(Type, (seen = new Map()));
+    let a = seen.get(s);
+    if (!a) {
+      if (seen.size > 400) seen.clear();
+      a = typedFrom(s, Type, null, label);
+      seen.set(s, a);
+    }
+    if (expect != null && a.length !== expect) throw new Error(`${label} holds ${a.length} values; it should hold ${expect}.`);
+    return a;
+  }
+  function decodeWater(j) {
+    if (!j || typeof j !== 'object') return null;
+    try {
+      const num = (v, d = null) => (Number.isFinite(v) ? v : d);
+      const raster = (g, label) => (g && g.w > 0 && g.h > 0 && g.cell > 0
+        ? { x0: g.x0, z0: g.z0, w: g.w | 0, h: g.h | 0, cell: g.cell, mask: typedOnce(g.mask, Uint8Array, (g.w | 0) * (g.h | 0), `${label}.mask`) } : null);
+      const storage = (p, label) => {
+        if (!p || !(p.w > 0) || !(p.h > 0)) return null;
+        const s = { kind: p.kind, x0: p.x0, z0: p.z0, w: p.w | 0, h: p.h | 0, cell: num(p.cell, 4), h0: p.h0, dh: num(p.dh, 0.05) };
+        s.e = typedOnce(p.e, Uint8Array, s.w * s.h, `${label}.e`);
+        s.v = typedOnce(p.v, Float32Array, null, `${label}.v`);
+        s.a = typedOnce(p.a, Float32Array, s.v.length, `${label}.a`);
+        s.top = s.h0 + (s.v.length - 1) * s.dh;
+        return s;
+      };
+      const walk = (k, label) => {
+        if (!k || !(k.count > 0)) return null;
+        const n = k.count | 0, f = key => (k[key] != null ? typedOnce(k[key], Float32Array, n, `${label}.${key}`) : null);
+        return { n, mouth: Math.min(n - 1, Math.max(0, k.mouth | 0)), x: f('x'), z: f('z'), along: f('along'), delay: f('delay'), height: f('height'), flow: f('flow'), share: f('share'), rise: f('rise'), drawn: f('drawn') };
+      };
+      const list = a => (Array.isArray(a) ? a : []);
+      const W = { clock: num(j.clock, 0), speed: num(j.speed, 48), dams: [], pools: [], coffers: [], below: new Map(), lab: null };
+      for (const d of list(j.dams)) {
+        const label = `water.dams[${d.id}]`, p = storage(d.pool, `${label}.pool`);
+        W.dams.push(Object.assign({}, d, {
+          box: raster(d.box, `${label}.box`), pool: p,
+          out: p && d.out ? typedOnce(d.out, Float32Array, p.v.length, `${label}.out`) : null,
+          reach: p && d.reach ? typedOnce(d.reach, Float32Array, p.v.length, `${label}.reach`) : null,
+          crestLow: list(d.crest && d.crest.level).reduce((m, v) => (Number.isFinite(v) ? Math.min(m, v) : m), Infinity),
+        }));
+      }
+      for (const p of list(j.pools)) W.pools.push(Object.assign({}, p, { cells: raster(p.cells, `water.pools[${p.id}].cells`) }));
+      for (const c of list(j.cofferdams)) W.coffers.push(Object.assign({}, c, { cells: raster(c.cells, `water.cofferdams[${c.id}].cells`) }));
+      for (const b of list(j.below)) W.below.set(b.key, Object.assign({}, b, { walk: walk(b.walk, `water.below.${b.key}`), bores: list(b.bores) }));
+      const L = j.lab;
+      if (L && L.pool) {
+        const lab = Object.assign({}, L, { pool: storage(L.pool, 'water.lab.pool'), breach: null });
+        const B = L.breach;
+        if (B && B.walk && B.frames && B.frames.count > 0) {
+          const w = walk(B.walk, 'water.lab.walk'), n = B.frames.count | 0, m = w ? w.mouth + 1 : 0;
+          lab.breach = Object.assign({}, B, {
+            walk: w, frames: n, t: typedOnce(B.frames.t, Float32Array, n, 'water.lab.t'), level: typedOnce(B.frames.level, Float32Array, n, 'water.lab.level'),
+            out: typedOnce(B.frames.out, Float32Array, n, 'water.lab.out'), surge: typedOnce(B.frames.surge, Float32Array, n * m, 'water.lab.surge'),
+          });
+        }
+        W.lab = lab;
+      }
+      return W;
+    } catch (e) {
+      if (typeof console !== 'undefined') console.warn(`The water players build is left out: ${e.message || e}`);
+      return null;
+    }
+  }
+  // The level a pool's water reaches a cell at (m; Infinity: never), and whether water standing at h covers a point, as
+  // the game's own test has it (Storage.Covers; for a dam Dams.InPool too: not on its wall or the water below it, and only
+  // once it stands over the river's own level).
+  const cellLevel = (p, c) => (p.e[c] === NEVER ? Infinity : p.h0 + p.e[c] * p.dh);
+  function rasterCell(g, x, z) {
+    if (!g || x < g.x0 || z < g.z0) return -1;
+    const a = Math.floor((x - g.x0) / g.cell), b = Math.floor((z - g.z0) / g.cell);
+    return a < g.w && b < g.h ? b * g.w + a : -1;
+  }
+  function poolCellAt(p, x, z) {
+    if (!p || x < p.x0 || z < p.z0) return -1;
+    const a = Math.floor((x - p.x0) / p.cell), b = Math.floor((z - p.z0) / p.cell);
+    return a < p.w && b < p.h ? b * p.w + a : -1;
+  }
+  function poolCovers(p, box, floor, x, z, h) {
+    if (!p || !(h > floor + 0.001)) return false;
+    const c = poolCellAt(p, x, z);
+    if (c < 0 || !(cellLevel(p, c) < h)) return false;
+    const k = rasterCell(box, x, z);
+    return !(k >= 0 && box.mask[k] & 3);
+  }
+  // The tables (StorageCurve): the water stored at a level, and the area under it (m², linear between the steps).
+  function tableAt(p, t, h) {
+    const n = t.length, row = (h - p.h0) / p.dh;
+    if (!(row > 0)) return t[0];
+    if (row >= n - 1) return t[n - 1];
+    const i = Math.floor(row);
+    return t[i] + (t[i + 1] - t[i]) * (row - i);
+  }
+  function decodeFords(F, n) {
+    if (!F || !(F.count >= 0) || F.at == null || F.deep == null) return null;
+    try {
+      const m = F.count | 0, at = typedFrom(F.at, Int32Array, m, 'fords.at'), deep = scaled(typedFrom(F.deep, Uint16Array, m, 'fords.deep'), 0.01);
+      for (let k = 0; k < m; k++) if (at[k] < 0 || at[k] >= n) return null;
+      return { count: m, at, deep, levels: F.levels !== false };
+    } catch (e) {
+      return null;
+    }
+  }
+  // How fast the current walks a wader off downstream (m/s), standing `depth` deep (m) in water running at `speed`
+  // (m/s): 0 where the feet hold. Straumr's own rule (Wading.Drift), with its numbers from the map.
+  function wadeDrift(depth, speed, wd) {
+    const load = (depth - wd.ankle) * speed * speed;
+    if (load <= wd.grip) return 0;
+    return Math.min(wd.strength * wd.give * (load - wd.grip), wd.pace != null ? wd.most * wd.pace : Infinity);
+  }
+  // The tide at a spot at moment t (tideAt's), into out: how far its stream has got (+1 full flood .. -1 full ebb), its
+  // height (m above the sea's mean) and how much of the open sea's range reaches here, as late as it comes here. Maps
+  // without the tide's heights: the open sea's moment, no height.
+  function tideHere(w, x, z, t, out) {
+    const L = w.tideLevel;
+    if (!L) { out[0] = t.phase; out[1] = 0; out[2] = 0; return out; }
+    const amp = bilinear(L, L.amp, x, z), lag = bilinear(L, L.lag, x, z);
+    out[0] = Math.sin(t.angle - lag);
+    out[1] = -w.settings.tideRange * t.strength * amp * Math.cos(t.angle - lag);
+    out[2] = amp;
+    return out;
+  }
+  // Water slides along a bank, never into it (CurrentField.Slip): the part heading into the bank beside it is turned along
+  // it (all of it right beside the bank, half a cell out), keeping its speed. bank: toward the land, as long as how firmly.
+  function slip(u, v, bx, bz, out) {
+    const weight = Math.hypot(bx, bz);
+    out[0] = u; out[1] = v;
+    if (weight < 1e-3) return out;
+    const nx = bx / weight, nz = bz / weight, into = u * nx + v * nz;
+    if (into <= 0) return out;
+    const k = Math.min(weight, 1), tu = u - nx * into * k, tv = v - nz * into * k, left = Math.hypot(tu, tv);
+    const s = left < 1e-6 ? 1 : Math.min(Math.hypot(u, v) / left, 1 + k);
+    out[0] = tu * s; out[1] = tv * s;
+    return out;
+  }
+  const TH = [0, 0, 0], SL = [0, 0];
+  // What carries swimmers and floating things at a spot at moment t (tideAt's), as near as the page can put it together
+  // the way Straumr's field does (CurrentField.Look), into out: [u, w] (m/s), where it came from (2 a close-up square's
+  // 4 m cells, 1 a river's line where there's no close-up, 0 the sea's 48 m grid, -1 dry ground or past the world's
+  // edge) and the water's depth below the sea's level there (m; 0 on a close-up cell that's dry to the field). In a
+  // close-up: the four cells round the spot, land left out, as the game blends them: the river's current at usual flow
+  // (capped and turned along the bank, as the square has it), less the tide's push up a river's mouth along the river's
+  // line, plus the sea's own current, plus the sea's tidal stream, thinned over shallows (full from 3 m deep) and where a
+  // river's mouth takes the tide instead, turned along the bank; the tide as late here as the map's tide heights say.
+  // A cell dry to the field (a raised river's spread water, the bank) lies still. With no close-up: along a river, its
+  // line's own speed less the tide's push (the river particles'); on the sea, its 48 m currents and the tide. Whirlpools
+  // on top, as the particles have them. Left out: the seams' swirls, boils, surf and rips, the wind's drift and the
+  // waves', Rivers and Lakes' water, rocks and what players have built. squareAt(i, j): close-up square (i, j), if loaded.
+  function waterNow(w, squareAt, x, z, t, out) {
+    const st = w.settings;
+    out[0] = 0; out[1] = 0; out[2] = -1; out[3] = 0;
+    if (x * x + z * z > WORLD_EDGE * WORLD_EDGE) return out;
+    const phase = tideHere(w, x, z, t, TH)[0];
+    const own = squareAt(Math.floor(x / SQ), Math.floor(z / SQ));
+    if (own) {
+      const F = own.flow, n = F.n, cell = F.cell;
+      const ok = Math.min(n - 1, Math.floor((z - own.z0) / cell)) * n + Math.min(n - 1, Math.floor((x - own.x0) / cell));
+      out[2] = 2;
+      if (!F.wet[ok]) return out;
+      const fx = x / cell - 0.5, fz = z / cell - 0.5, gx0 = Math.floor(fx), gz0 = Math.floor(fz), tx = fx - gx0, tz = fz - gz0;
+      let ru = 0, rw = 0, su = 0, sw = 0, dep = 0, tid = 0, bx = 0, bz = 0, tot = 0;
+      for (let dz = 0; dz <= 1; dz++)
+        for (let dx = 0; dx <= 1; dx++) {
+          const gx = gx0 + dx, gz = gz0 + dz, si = Math.floor((gx * cell) / SQ), sj = Math.floor((gz * cell) / SQ);
+          const q = si === own.wx && sj === own.wz ? own : squareAt(si, sj);
+          if (!q) continue;
+          const Q = q.flow, k = (gz - Math.round(q.z0 / cell)) * n + (gx - Math.round(q.x0 / cell));
+          if (k < 0 || k >= n * n || !Q.wet[k]) continue;
+          const wt = (dx ? tx : 1 - tx) * (dz ? tz : 1 - tz), D = q.dbg;
+          ru += Q.u[k] * wt; rw += Q.w[k] * wt; su += Q.su[k] * wt; sw += Q.sw[k] * wt;
+          dep += Q.depth[k] * wt; tid += Q.tidal[k] * wt;
+          if (D && D.bx && D.bz) { bx += D.bx[k] * wt; bz += D.bz[k] * wt; }
+          tot += wt;
+        }
+      if (!(tot > 1e-9)) {
+        const D = own.dbg;
+        ru = F.u[ok]; rw = F.w[ok]; su = F.su[ok]; sw = F.sw[ok]; dep = F.depth[ok]; tid = F.tidal[ok];
+        bx = D && D.bx ? D.bx[ok] : 0; bz = D && D.bz ? D.bz[ok] : 0; tot = 1;
+      }
+      ru *= 0.01 / tot; rw *= 0.01 / tot; su *= 0.01 / tot; sw *= 0.01 / tot; dep *= 0.01 / tot; tid /= 255 * tot; bx /= 127 * tot; bz /= 127 * tot;
+      // the tide's push up a river's mouth, along the river's line (the spot's own cell's line point's way down)
+      const D = own.dbg;
+      let lx = D && D.tx && D.tz ? D.tx[ok] / 127 : 0, lz = D && D.tx && D.tz ? D.tz[ok] / 127 : 0, ll = Math.hypot(lx, lz);
+      if (ll < 0.5) { lx = ru; lz = rw; ll = Math.hypot(lx, lz); }
+      const push = tid > 0 && ll > 1e-6 ? tidePush(st, tid, phase, t.strength) / ll : 0;
+      let fu = ru - lx * push, fw = rw - lz * push;
+      const fl = Math.hypot(fu, fw);
+      if (fl > st.maxSpeed) { fu *= st.maxSpeed / fl; fw *= st.maxSpeed / fl; }
+      // the sea's tidal stream: full from 3 m deep, none where a river's mouth takes the tide instead
+      const estuary = Math.min(1, dep > 0.05 ? tid / Math.min(1, dep / 1.5) : tid);
+      const k = t.strength * phase * Math.min(1, dep / 3) * (1 - estuary);
+      slip(bilinear(w.tide, w.tide.u, x, z) * k, bilinear(w.tide, w.tide.w, x, z) * k, bx, bz, SL);
+      out[0] = fu + su + SL[0]; out[1] = fw + sw + SL[1]; out[3] = dep;
+    } else {
+      const R = w.rivers, i = R.count ? nearestRiver(w, x, z, 90) : -1;
+      if (i >= 0 && Math.hypot(R.x[i] - x, R.z[i] - z) <= R.half[i] + 6) {
+        const net = R.speed[i] - (R.tidal[i] > 0 ? tidePush(st, R.tidal[i], phase, t.strength) : 0);
+        out[0] = R.dx[i] * net; out[1] = R.dz[i] * net; out[2] = 1; out[3] = R.depth[i];
+      } else {
+        const g = groundAt(w, x, z);
+        if (!g || g.h >= 0) return out;
+        const k = t.strength * phase * Math.min(1, -g.h / 3);
+        out[0] = bilinear(w.sea, w.sea.u, x, z) + bilinear(w.tide, w.tide.u, x, z) * k;
+        out[1] = bilinear(w.sea, w.sea.w, x, z) + bilinear(w.tide, w.tide.w, x, z) * k;
+        out[2] = 0; out[3] = -g.h;
+      }
+    }
+    if (w.whirlpools.length) {
+      const hold = poolHold(w.whirlpools, st, t.phase, x, z, t.strength);
+      if (hold > 0) { out[0] *= 1 - hold; out[1] *= 1 - hold; }
+      addWhirlpools(w.whirlpools, st, t.phase, x, z, out, t.strength);
+    }
+    return out;
+  }
+  // The fords at moment t: each stretch of river where the deepest water across stays under the swim depth now (state
+  // 2), or only nearer today's low water (state 1), as one mark at its shallowest point now: { i, state, deep (m now),
+  // low (m at today's low water), length (m) }, those wadeable now first, shallowest first. Points run mouth first, so
+  // the point just upstream of i is i + 1 when its next is i.
+  function fordRuns(w, t) {
+    const F = w.fords, R = w.rivers, wd = w.settings.wading, out = [];
+    if (!F || !wd || wd.swim == null || !F.count) return out;
+    const state = new Uint8Array(R.count), now = new Float32Array(R.count), low = new Float32Array(R.count), th = [0, 0, 0];
+    const range = w.settings.tideRange * t.strength;
+    for (let k = 0; k < F.count; k++) {
+      const i = F.at[k];
+      tideHere(w, R.x[i], R.z[i], t, th);
+      now[i] = F.deep[k] + th[1];
+      low[i] = F.deep[k] - range * th[2];
+      state[i] = now[i] < wd.swim ? 2 : low[i] < wd.swim ? 1 : 0;
+    }
+    const upstream = i => (i + 1 < R.count && R.next[i + 1] === i && R.river[i + 1] === R.river[i] ? i + 1 : -1);
+    const emit = (run, s) => {
+      let best = run[0], length = 0;
+      for (let q = 0; q < run.length; q++) {
+        if (now[run[q]] < now[best]) best = run[q];
+        if (q) length += Math.hypot(R.x[run[q]] - R.x[run[q - 1]], R.z[run[q]] - R.z[run[q - 1]]);
+      }
+      out.push({ i: best, state: s, deep: now[best], low: low[best], length });
+    };
+    for (let k = 0; k < F.count; k++) {
+      const top = F.at[k], up = upstream(top);
+      if (!state[top] || (up >= 0 && state[up])) continue; // not the upper end of its stretch
+      const run = [];
+      for (let j = top, guard = 0; j >= 0 && state[j] && guard < R.count; j = R.next[j], guard++) run.push(j);
+      if (run.some(j => state[j] === 2)) {
+        let part = [];
+        for (const j of run) {
+          if (state[j] === 2) part.push(j);
+          else if (part.length) { emit(part, 2); part = []; }
+        }
+        if (part.length) emit(part, 2);
+      } else emit(run, 1);
+    }
+    out.sort((a, b) => b.state - a.state || a.deep - b.deep);
+    return out;
+  }
+  // Water power: ½ρv³, the kinetic power the current carries through each square metre facing it (W/m²), as
+  // StraumrApi.KineticPowerDensity has it. Per 512 m of the map, the river point with the most, from its channel's mean
+  // speed (at usual flow in the atlas), 2 kW/m² or more (1.6 m/s; a usual river at 1.2 m/s carries 0.86 kW/m²); not on
+  // dry ground, out across a lake or in water another river holds; ties (rivers capped at the same speed) go to the
+  // river carrying more water.
+  const RHO = 1000, POWER_MIN = 2000, POWER_CELL = 512;
+  const waterPower = v => 0.5 * RHO * v * v * v;
+  const strongerRiver = (R, i, b) => R.speed[i] > R.speed[b] + 1e-6 || (Math.abs(R.speed[i] - R.speed[b]) <= 1e-6 && !!R.q && R.q[i] > R.q[b]);
+  function powerBest(w) {
+    const R = w.rivers, best = new Map();
+    for (let i = 0; i < R.count; i++) {
+      if ((R.flags && R.flags[i] & 7) || waterPower(R.speed[i]) < POWER_MIN) continue;
+      const key = sqKey(Math.floor(R.x[i] / POWER_CELL), Math.floor(R.z[i] / POWER_CELL)), b = best.get(key);
+      if (b === undefined || strongerRiver(R, i, b)) best.set(key, i);
+    }
+    return Int32Array.from(best.values());
+  }
+  // ...and the strongest of those per square `cell` m (512 m times a power of two, as the zoom has it): a few per screen.
+  function powerSpots(w, best, cell) {
+    const R = w.rivers, top = new Map();
+    for (const i of best) {
+      const key = sqKey(Math.floor(R.x[i] / cell), Math.floor(R.z[i] / cell)), b = top.get(key);
+      if (b === undefined || strongerRiver(R, i, b)) top.set(key, i);
+    }
+    return Int32Array.from(top.values());
+  }
+
   function decodeFlowmap(j) {
     if (!j || typeof j !== 'object') throw new Error("This file isn't a Straumr flow map.");
     if (j.format !== FORMAT) {
@@ -554,6 +985,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         whiteFroudeFull: num(s.whiteFroudeFull, 0.9), whiteMinSpeed: num(s.whiteMinSpeed, 0.8),
         whirlpools: num(s.whirlpools, 1), estuary: num(s.estuary, 0.6), springNeap: num(s.springNeap, 0.35),
         tideRange: num(s.tideRange, 0.6),
+        // the player's wading (fords) and how fast floating things ride the current (drift); newer maps only
+        wading: decodeWading(s.wading), floatCarry: num(s.floatCarry, null),
       },
       // the lunar month the tides follow (older files have none: two plain tides a day)
       lunar: Number.isFinite(j.moon) && num(j.monthDays, 0) > 0,
@@ -569,6 +1002,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     w.tide = decodeGrid(j.tide, 'tide', [['u', Int16Array, 0.01], ['w', Int16Array, 0.01]]);
     // how high the tide runs at each spot (share of the open sea's range) and how late it comes; newer files only
     w.tideLevel = j.tideLevel ? decodeGrid(j.tideLevel, 'tideLevel', [['amp', Uint8Array, 1 / 255], ['lag', Uint8Array, Math.PI / 255]]) : null;
+    w.levels = decodeLevels(j.levels, w.ground);
     const r = j.rivers || {};
     const n = Math.max(0, r.count | 0);
     const R = { count: n };
@@ -596,6 +1030,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       R.head = extra('head', Float32Array, null);
       R.scale = extra('scale', Uint16Array, 0.1);
       R.flags = extra('flags', Uint8Array, null);
+      R.q = extra('q', Float32Array, null); // the water each point carries (m³/s), for water power's ties and readout
       for (let i = 0; i < n; i++) if (R.next[i] >= n || R.next[i] === i) R.next[i] = -1;
       // where the water runs against the line as drawn (its downstream points back up it), for the particles
       R.back = new Uint8Array(n);
@@ -611,6 +1046,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       R.back = new Uint8Array(0);
     }
     w.rivers = R;
+    w.fords = decodeFords(j.fords, n);
+    w.water = decodeWater(j.water); // the water players build (newer files made in a world): null without it
     return prepare(w);
   }
 
@@ -626,6 +1063,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       return out;
     };
     const flow = sub(j.flow, 'flow', [['u', Int16Array], ['w', Int16Array], ['su', Int16Array], ['sw', Int16Array], ['depth', Uint16Array], ['wet', Uint8Array], ['tidal', Uint8Array, true]]);
+    // the river's usual level in each cell, mm above the sea (Straumr 0.1.3+, with its river levels on): null without
+    flow.level = null;
+    if (j.flow.level != null) {
+      try { flow.level = typedFrom(j.flow.level, Uint16Array, flow.n * flow.n, 'detail flow.level'); } catch (e) { flow.level = null; }
+    }
     return {
       wx: j.wx | 0, wz: j.wz | 0,
       x0: Number.isFinite(j.x0) ? j.x0 : (j.wx | 0) * SQ, z0: Number.isFinite(j.z0) ? j.z0 : (j.wz | 0) * SQ, size: SQ,
@@ -869,8 +1311,34 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     }
     return join;
   }
+  // How far out from the line a river particle may sit at each point (m): never past a bend's own middle, where the
+  // path beside the line folds back on itself and loops; at a point, the tighter of the stretches either side of it,
+  // and changing along the river by at most half a metre a metre (both ways), so a particle out near a bank drifts
+  // toward the inside of a bend instead of jumping across to it (drawn, that jump was a bright straight streak).
+  function bendRoom(R) {
+    const n = R.count | 0, room = new Float32Array(n).fill(1e6), stretch = new Float32Array(n).fill(1e6), seg = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const j = R.next[i];
+      if (j < 0) continue;
+      seg[i] = Math.hypot(R.x[j] - R.x[i], R.z[j] - R.z[i]);
+      const flip = R.back && R.back[i] !== R.back[j] ? -1 : 1; // the water's way, where it runs back up the line
+      const turn = Math.acos(Math.max(-1, Math.min(1, (R.dx[i] * R.dx[j] + R.dz[i] * R.dz[j]) * flip)));
+      if (turn > 0.01) stretch[i] = (0.8 * seg[i]) / turn;
+    }
+    for (let i = 0; i < n; i++) {
+      room[i] = Math.min(room[i], stretch[i]);
+      if (R.next[i] >= 0) room[R.next[i]] = Math.min(room[R.next[i]], stretch[i]);
+    }
+    // points run mouth first (upstream is the next index), so down the river is down the indices
+    for (let i = n - 1; i >= 0; i--) if (R.next[i] >= 0) room[R.next[i]] = Math.min(room[R.next[i]], room[i] + 0.5 * seg[i]);
+    for (let i = 0; i < n; i++) if (R.next[i] >= 0) room[i] = Math.min(room[i], room[R.next[i]] + 0.5 * seg[i]);
+    return room;
+  }
   function prepare(w) {
     w.whirlpools = w.whirlpools || [];
+    w.rivers.room = bendRoom(w.rivers);
+    w.levels = w.levels || null;
+    w.fords = w.fords || null;
     // the moment of export in game days: "days" as given (a whole count gets the time of day added)
     w.D0 = w.lunar ? (w.days % 1 === 0 ? w.days + w.day : w.days) : w.day;
     w.index = buildRiverIndex(w.rivers);
@@ -1053,10 +1521,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     let ux = ax + (bx - ax) * t, uz = az + (bz - az) * t;
     const ul = Math.hypot(ux, uz) || 1;
     ux /= ul; uz /= ul;
-    // never out past the bend's own middle, where the path beside the line folds back on itself and loops
-    const turn = Math.acos(Math.max(-1, Math.min(1, ax * bx + az * bz))), seg = Math.hypot(R.x[j] - R.x[i], R.z[j] - R.z[i]);
-    let half = (R.half[i] + (R.half[j] - R.half[i]) * t) * 0.9;
-    if (turn > 0.01) half = Math.min(half, (0.8 * seg) / turn);
+    // never out past a bend's own middle (the room each point has, eased between them)
+    const half = Math.min((R.half[i] + (R.half[j] - R.half[i]) * t) * 0.9, R.room[i] + (R.room[j] - R.room[i]) * t);
     out[0] = x - uz * o * half;
     out[1] = z + ux * o * half;
     return out;
@@ -1173,6 +1639,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     decodeFlowmap, decodeDetail, detailFlowAt, detailDepthAt, detailCellAt, whiteness, froude, atlasLocal, SEED_RE, seedParam, parseHash, sqKey, HERE,
     VALHEIM, baseSeed, poolOn, poolPeak, addWhirlpools, poolHold, retreatRiver, tidePush, foamAt, detailLerp, tideAt, tideKind, levelAt,
     makeDemo, groundAt, vecAt, seaNow, tidePhase, nearestRiver, advanceRiver, riverPos, riverAt, compass, speedBucket, rampRGB, bilinear,
+    decodeLevels, floodClass, levelsAt,
+    decodeWater, cellLevel, poolCovers, tableAt,
+    decodeWading, decodeFords, wadeDrift, tideHere, slip, waterNow, fordRuns, waterPower, powerBest, powerSpots,
     DEBUG_CHANNELS, decodeDetailDebug, hasDebug, debugCell, phiGradient, phiContours, angleBetween, bearing, niceStep,
   };
   globalThis.StraumrCore = Core;
@@ -1201,9 +1670,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     day: 0.125, D: 0.125, tide: { phase: 0, strength: 1, moon: null, angle: 0, rate: 4 * Math.PI }, curveKey: '',
     tideView: false, tideMode: 'currents', speedBeforeTide: null, gaugeKey: '',
     playing: false, speed: 5, animate: !reduceMotion, dirty: true, viewChanged: true, interacting: false, settle: 0,
-    layers: { rivers: true, sea: true, tide: false, white: true, pools: true }, detailOn: false,
+    layers: { rivers: true, sea: true, tide: false, flood: false, white: true, pools: true, fords: false, power: false, works: true }, detailOn: false,
     activePools: [], poolAngle: new Float32Array(0),
-    groundImg: null, tideImg: null, gShade: null, gLand: null,
+    groundImg: null, tideImg: null, floodImg: null, gShade: null, gLand: null,
     vis: new Int32Array(1), visN: 0, visCum: new Float64Array(1), visArea: 0, dvis: new Int32Array(1), dvisN: 0, hover: null,
   };
   // Free particles drift through whatever field is there (the sea, or a detail square's 4 m currents); river
@@ -1400,6 +1869,58 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     ctx.putImageData(img, 0, 0);
     return c;
   }
+  // The rivers' levels: blue where a raised river stands over land in an ordinary season, teal over the ground only
+  // the spring high water floods; nothing on water at the sea's level (the map draws it already) or above the flood.
+  const FLOOD_RGBA = [null, null, [96, 168, 255, 215], [72, 214, 180, 180]];
+  function paintFlood(d, o, k) {
+    const c = FLOOD_RGBA[k];
+    d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = c[3];
+  }
+  // The whole map's, a pixel a 32 m cell (null without levels).
+  function renderFlood(w) {
+    const L = w.levels, G = w.ground, n = G.n;
+    if (!L) return null;
+    const c = document.createElement('canvas');
+    c.width = n; c.height = n;
+    const ctx = c.getContext('2d'), img = ctx.createImageData(n, n), d = img.data;
+    for (let row = 0; row < n; row++)
+      for (let col = 0; col < n; col++) {
+        const i = row * n + col;
+        if (!L.high[i]) continue;
+        const k = floodIn(L, i, G.height[i] / 10);
+        if (k >= 2) paintFlood(d, ((n - 1 - row) * n + col) * 4, k);
+      }
+    ctx.putImageData(img, 0, 0);
+    return c;
+  }
+  // A detail square's: its own 2 m ground against the levels of the 32 m cell each spot lies in, so the flood's edge
+  // follows the banks. Made once a square, when first drawn with the layer on; false where none of it floods.
+  function floodDetailImg(dq, w) {
+    if (dq.floodImg !== undefined) return dq.floodImg;
+    const L = w.levels, G = w.ground, gn = G.n, D = dq.ground, n = D.n;
+    let c = null, ctx = null, img = null;
+    for (let row = 0; row < n; row++) {
+      const gr = Math.floor((dq.z0 + (row + 0.5) * D.cell - G.origin) / G.cell);
+      if (gr < 0 || gr >= gn) continue;
+      for (let col = 0; col < n; col++) {
+        const gc = Math.floor((dq.x0 + (col + 0.5) * D.cell - G.origin) / G.cell);
+        if (gc < 0 || gc >= gn) continue;
+        const gi = gr * gn + gc;
+        if (!L.high[gi]) continue;
+        const k = floodIn(L, gi, D.height[row * n + col] / 10);
+        if (k < 2) continue;
+        if (!c) {
+          c = document.createElement('canvas');
+          c.width = n; c.height = n;
+          ctx = c.getContext('2d');
+          img = ctx.createImageData(n, n);
+        }
+        paintFlood(img.data, ((n - 1 - row) * n + col) * 4, k);
+      }
+    }
+    if (c) ctx.putImageData(img, 0, 0);
+    return (dq.floodImg = c || false);
+  }
 
   // ---- view
   function fit() {
@@ -1461,6 +1982,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         DETAIL.cache.set(k, dq); // most recently used
         const size = dq.size * S.s;
         ctx.drawImage(dq.img, toScreenX(dq.x0), toScreenY(dq.z0 + dq.size), size + 0.6, size + 0.6);
+      }
+  }
+  // The rivers' levels over the loaded detail squares (the 32 m layer under them is hidden by the squares).
+  function drawFloodDetail(ctx) {
+    const [x0, z1] = toWorld(0, 0), [x1, z0] = toWorld(S.W, S.H);
+    for (let j = Math.floor(z0 / SQ); j <= Math.floor(z1 / SQ); j++)
+      for (let i = Math.floor(x0 / SQ); i <= Math.floor(x1 / SQ); i++) {
+        const dq = DETAIL.cache.get(sqKey(i, j)), img = dq && floodDetailImg(dq, S.w);
+        if (!img) continue;
+        const size = dq.size * S.s;
+        ctx.drawImage(img, toScreenX(dq.x0), toScreenY(dq.z0 + dq.size), size + 0.6, size + 0.6);
       }
   }
   // River channels at their width (and foam on white reaches), except inside loaded detail squares, which show the
@@ -1832,6 +2364,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   // final current (white), line tangent (lilac), the way the head falls (green), the bank (orange).
   function drawPick() {
     const p = DBG.pick, w = S.w;
+    if (p && p.kind === 'water') { if (w && S.layers.works) drawWaterPick(p); return; }
     if (!DBG.on || !p || !w) return;
     const R = w.rivers, ctx = mctx, G = 34;
     const glyph = (sx, sy, u, v, len, style) => {
@@ -1912,11 +2445,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   function updateCellBox() {
     const p = DBG.pick, box = $('cellBox');
     DBG.cell = null;
+    updateWaterTools();
     if (!p || !S.w) { box.hidden = true; return; }
     box.hidden = false;
     const rows = [], notes = [];
     const row = (k, v, cls, sw) => rows.push(`<dt>${sw ? `<i style="background:${sw}"></i>` : ''}${esc(k)}</dt><dd${cls ? ` class="${cls}"` : ''}>${v}</dd>`);
-    if (p.kind === 'point') {
+    if (p.kind === 'water') waterRowsFor(p, row, notes);
+    else if (p.kind === 'point') {
       $('cellTitle').textContent = 'River point';
       pointRows(p.i, row, notes);
     } else {
@@ -2127,13 +2662,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     bctx.imageSmoothingEnabled = true;
     if (S.s >= SMOOTH_S && !S.interacting) bctx.drawImage(smoothBase(), 0, 0, S.W, S.H);
     else drawGrid(bctx, S.groundImg, S.w.ground);
+    const flood = S.layers.flood && S.floodImg && !S.tideView;
+    if (flood) drawGrid(bctx, S.floodImg, S.w.ground);
     if (S.detailOn) drawDetail(bctx);
+    if (flood && S.detailOn) drawFloodDetail(bctx);
     if (DBG.on) { if (S.detailOn) drawDebugSquares(bctx); else DBG.stats = null; }
     if (S.layers.tide && !S.tideView) { bctx.globalAlpha = 0.9; drawGrid(bctx, S.tideImg, S.w.tide); bctx.globalAlpha = 1; }
     const span = S.W / S.s, heavy = S.interacting && S.w.rivers.count > 60000 && span > 6000;
     if (S.layers.rivers && !heavy) drawChannels(bctx);
     else if (!S.layers.rivers) { S.visN = 0; S.dvisN = 0; }
     if (DBG.on && DBG.points) drawRiverDebug(bctx);
+    if (S.layers.works && !S.tideView) drawWater(bctx);
     if (S.tideView) { bctx.fillStyle = 'rgba(5, 9, 13, 0.62)'; bctx.fillRect(0, 0, S.W, S.H); } // the tide comes first
     drawYou(bctx);
     drawScaleBar(bctx);
@@ -2157,7 +2696,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   // have left it are dropped.
   function planDetail() {
     if (!S.detailOn) {
-      for (const ctrl of DETAIL.inflight.values()) ctrl.abort();
+      for (const [k, ctrl] of DETAIL.inflight) if (!DRIFT.need.has(k)) ctrl.abort();
       DETAIL.wanted = [];
       DETAIL.wantedSet = new Set();
       updateChip();
@@ -2174,7 +2713,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     list.sort((a, b) => a.d - b.d);
     DETAIL.wanted = list.slice(0, DETAIL_CAP);
     DETAIL.wantedSet = new Set(DETAIL.wanted.map(q => q.k));
-    for (const [k, ctrl] of DETAIL.inflight) if (!DETAIL.wantedSet.has(k)) ctrl.abort();
+    for (const [k, ctrl] of DETAIL.inflight) if (!DETAIL.wantedSet.has(k) && !DRIFT.need.has(k)) ctrl.abort(); // a drift's own stay
     pump();
   }
   function pump() {
@@ -2359,16 +2898,21 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       const speed = Math.abs(net);
       const white = riverAt(w, riv.i[p], riv.t[p], 'white');
       const down = (net >= 0) !== (w.rivers.back != null && w.rivers.back[riv.i[p]] === 1);
+      const was = w.rivers.river[riv.i[p]];
       const moved = down ? advanceRiver(w, riv.i, riv.t, p, speed * k) : retreatRiver(w, riv.i, riv.t, p, speed * k);
       if (!moved) { riv.age[p] = riv.life[p]; continue; }
+      // on into the parent river at a confluence: it lands on the parent's nearest point (up to 40 m off), so its trail
+      // starts again there (drawn, that hop was a bright straight streak at every confluence on screen)
+      if (w.rivers.river[riv.i[p]] !== was) riv.sx[p] = NaN;
       const foam = foamy && white > WHITE;
       if (foam) riv.o[p] = Math.max(-0.95, Math.min(0.95, o + (Math.random() - 0.5) * 0.3));
       riverPos(w, riv.i[p], riv.t[p], riv.o[p], p2);
       if (det && DETAIL.cache.has(sqKey(Math.floor(p2[0] / SQ), Math.floor(p2[1] / SQ)))) { riv.age[p] = riv.life[p]; continue; }
       const px = toScreenX(p2[0]), py = toScreenY(p2[1]);
       if (px < -20 || py < -20 || px > S.W + 20 || py > S.H + 20) { riv.age[p] = riv.life[p]; continue; }
+      // a step much longer than the water carries it is a jump (on into the parent river at a confluence): not drawn
       const hop = Math.abs(px - riv.sx[p]) + Math.abs(py - riv.sy[p]);
-      if (hop < 60) push(segRiv[foam ? WHITE_B : speedBucket(speed)], riv.sx[p], riv.sy[p], px, py);
+      if (hop < (foam ? 60 : 6 + 4 * speed * k * S.s)) push(segRiv[foam ? WHITE_B : speedBucket(speed)], riv.sx[p], riv.sy[p], px, py);
       riv.sx[p] = px; riv.sy[p] = py;
     }
   }
@@ -2414,7 +2958,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     mctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
     mctx.clearRect(0, 0, S.W, S.H);
     if (S.w && S.tideView) drawTideView();
+    else if (S.w) drawExtras(mctx);
     drawPools(dt);
+    drawDrift(mctx);
     drawPick();
   }
   const FLOOD_RGB = [72, 214, 180], EBB_RGB = [245, 168, 72], HIGH_RGB = [96, 168, 255], LOW_RGB = [222, 120, 90];
@@ -2523,6 +3069,831 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     for (let q = 0; q < 26; q++) stepFlow(1 / 60, 1);
   }
 
+  // ---- fords, water power and drift: where a river can be waded across, where the water carries the most power, and
+  // where something floating goes. On the marks layer (the fords and the footing follow the tide on the clock); not in
+  // the tide view, which is about the tide alone.
+  const FIRM_RGBA = [80, 220, 160, 150], PUSH_RGB = [255, 170, 70], FORD_CSS = 'rgb(141, 240, 181)', POWER_CSS = '#ffd25e';
+  const DRIFT_STEP = 2, DRIFT_SQUARES = 80; // s a step; close-up squares one drift may fetch from the game
+  const FX = { runs: [], runsKey: '', runsWorld: null, best: null, bestWorld: null, spots: null, spotsCell: 0, q: [0, 0, 0, 0], th: [0, 0, 0], budget: 0, deferred: false };
+  const FOOT_BUDGET = 4; // close-up squares whose footing is made again in one frame (the rest keep theirs a frame or two)
+  const DRIFT = { on: false, minutes: 15, path: null, token: 0, need: new Set(), failed: new Set() };
+  const wadingOf = w => (w && w.settings.wading) || null;
+  const carryOf = w => (Number.isFinite(w.settings.floatCarry) ? w.settings.floatCarry : 1.18);
+  const squareIJ = (i, j) => DETAIL.cache.get(sqKey(i, j)); // a loaded close-up square, at any zoom
+  // the tide as far as the fords and the footing go: 48 steps a cycle, and today's size
+  const tideKey = t => `${Math.round((t.angle / (2 * Math.PI)) * 48) % 48}|${t.strength.toFixed(2)}`;
+  const powerText = p => (p >= 1000 ? `${(p / 1000).toFixed(p >= 9950 ? 0 : 1)} kW/m²` : `${Math.round(p)} W/m²`);
+  const kmText = m => (m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${Math.round(m)} m`);
+  function resetExtras() {
+    FX.runsWorld = null; FX.bestWorld = null; FX.spots = null;
+    DRIFT.token++; DRIFT.path = null; DRIFT.need.clear(); DRIFT.failed.clear();
+    updateExtraKeys();
+    updateDriftNote();
+  }
+  function fordMarks() {
+    const w = S.w, key = tideKey(S.tide);
+    if (FX.runsWorld !== w || FX.runsKey !== key) { FX.runs = fordRuns(w, S.tide); FX.runsKey = key; FX.runsWorld = w; }
+    return FX.runs;
+  }
+  // Does the tide (or a whirlpool) reach a close-up square at all? Its footing is made again as the tide moves only then.
+  function tideTouches(w, dq) {
+    const F = dq.flow, th = FX.th, m = F.n * F.n;
+    for (let k = 0; k < m; k++) if (F.tidal[k]) return true;
+    for (let a = 0; a <= 4; a++)
+      for (let b = 0; b <= 4; b++) {
+        const x = dq.x0 + (a * dq.size) / 4, z = dq.z0 + (b * dq.size) / 4;
+        if (tideHere(w, x, z, S.tide, th)[2] > 0.002 || Math.hypot(bilinear(w.tide, w.tide.u, x, z), bilinear(w.tide, w.tide.w, x, z)) > 0.005) return true;
+      }
+    const cx = dq.x0 + dq.size / 2, cz = dq.z0 + dq.size / 2;
+    return w.whirlpools.some(p => Math.hypot(p.x - cx, p.z - cz) < 4 * p.core + dq.size);
+  }
+  // A close-up square's wading water at the clock's tide: every 2 m of it under the swim depth now, firm (the current
+  // can't move you) in green, amber where the current walks you downstream (stronger the faster), nothing where you'd
+  // swim or on dry ground. The depth: the river's usual level there (the square's own; older squares have none, so the
+  // sea's level) with the tide's height now, less the 2 m ground; the speed: what carries you (waterNow), the rule
+  // Straumr's (Wading). Made again only as the tide moves on, and only where it reaches; a few squares a frame.
+  function footingImg(dq, w, wd) {
+    if (dq.tideFree === undefined) dq.tideFree = !tideTouches(w, dq);
+    const key = dq.tideFree ? 'still' : tideKey(S.tide), had = dq.foot && dq.foot.world === w;
+    if (had && (dq.foot.key === key || S.interacting)) return dq.foot.img;
+    if (had && FX.budget <= 0) { FX.deferred = true; return dq.foot.img; }
+    FX.budget--;
+    const G = dq.ground, n = G.n, F = dq.flow, fn = F.n, lev = F.level, t = S.tide, q = FX.q, th = FX.th;
+    const cap = wd.pace != null ? wd.most * wd.pace : 1;
+    const c = (dq.foot && dq.foot.canvas) || document.createElement('canvas');
+    c.width = n; c.height = n;
+    const ctx = c.getContext('2d'), img = ctx.createImageData(n, n), d = img.data;
+    let any = false;
+    for (let row = 0; row < n; row++) {
+      const z = dq.z0 + (row + 0.5) * G.cell, fr = Math.min(fn - 1, Math.floor(((row + 0.5) * G.cell) / F.cell));
+      for (let col = 0; col < n; col++) {
+        const x = dq.x0 + (col + 0.5) * G.cell, fc = Math.min(fn - 1, Math.floor(((col + 0.5) * G.cell) / F.cell));
+        const depth = (lev ? lev[fr * fn + fc] / 1000 : 0) + tideHere(w, x, z, t, th)[1] - G.height[row * n + col] / 10;
+        if (depth <= 0.02 || depth >= wd.swim) continue;
+        waterNow(w, squareIJ, x, z, t, q);
+        const drift = wadeDrift(depth, Math.hypot(q[0], q[1]), wd), o = ((n - 1 - row) * n + col) * 4;
+        if (drift <= 0) { d[o] = FIRM_RGBA[0]; d[o + 1] = FIRM_RGBA[1]; d[o + 2] = FIRM_RGBA[2]; d[o + 3] = FIRM_RGBA[3]; }
+        else { d[o] = PUSH_RGB[0]; d[o + 1] = PUSH_RGB[1]; d[o + 2] = PUSH_RGB[2]; d[o + 3] = 110 + 120 * Math.min(1, drift / cap); }
+        any = true;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    dq.foot = { key, world: w, canvas: c, img: any ? c : null };
+    return dq.foot.img;
+  }
+  function drawFootings(ctx, wd) {
+    ctx.imageSmoothingEnabled = true;
+    FX.budget = FOOT_BUDGET;
+    FX.deferred = false;
+    for (const dq of visibleSquares()) {
+      const img = footingImg(dq, S.w, wd);
+      if (!img) continue;
+      const size = dq.size * S.s;
+      ctx.drawImage(img, toScreenX(dq.x0), toScreenY(dq.z0 + dq.size), size + 0.6, size + 0.6);
+    }
+    if (FX.deferred && !S.animate) markDirty(false); // still frames: the next one makes the rest
+  }
+  // A ford: a bar across the river as wide as its water, solid where it can be waded now, dashed where only nearer low
+  // water today; one a 12 px of screen (a carpet of them reads as nothing), those wadeable now first.
+  function drawFords(ctx) {
+    const R = S.w.rivers, runs = fordMarks(), taken = new Set(), now = [], low = [];
+    for (const f of runs) {
+      const i = f.i, sx = toScreenX(R.x[i]), sy = toScreenY(R.z[i]);
+      if (sx < -40 || sy < -40 || sx > S.W + 40 || sy > S.H + 40) continue;
+      const cell = Math.floor(sx / 12) * 100000 + Math.floor(sy / 12);
+      if (taken.has(cell)) continue;
+      taken.add(cell);
+      const half = Math.max(5, Math.min(40, R.half[i] * S.s + 3)), ax = -R.dz[i] * half, ay = -R.dx[i] * half; // across, on screen (y runs down)
+      (f.state === 2 ? now : low).push(sx - ax, sy - ay, sx + ax, sy + ay);
+    }
+    ctx.lineCap = 'round';
+    strokeSegs(ctx, now, HALO, 6.5);
+    strokeSegs(ctx, now, FORD_CSS, 3.2);
+    ctx.setLineDash([4, 3]);
+    strokeSegs(ctx, low, HALO, 5);
+    strokeSegs(ctx, low, FORD_CSS, 2.2);
+    ctx.setLineDash([]);
+  }
+  // The strongest water power per region about 120 px across (512 m up, in powers of two): a diamond, and its kW/m² when
+  // the regions are 2 km or less.
+  function powerMarks() {
+    const w = S.w;
+    if (FX.bestWorld !== w) { FX.best = powerBest(w); FX.bestWorld = w; FX.spots = null; }
+    let cell = POWER_CELL;
+    while (cell * S.s < 120 && cell < 16384) cell *= 2;
+    if (!FX.spots || FX.spotsCell !== cell) { FX.spots = powerSpots(w, FX.best, cell); FX.spotsCell = cell; }
+    return FX.spots;
+  }
+  function drawPower(ctx) {
+    const R = S.w.rivers, spots = powerMarks(), label = FX.spotsCell <= 2048;
+    ctx.font = '600 11px "IBM Plex Mono", Consolas, monospace';
+    ctx.lineJoin = 'round';
+    for (const i of spots) {
+      const sx = toScreenX(R.x[i]), sy = toScreenY(R.z[i]);
+      if (sx < -30 || sy < -30 || sx > S.W + 60 || sy > S.H + 30) continue;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy - 6); ctx.lineTo(sx + 6, sy); ctx.lineTo(sx, sy + 6); ctx.lineTo(sx - 6, sy); ctx.closePath();
+      ctx.lineWidth = 3; ctx.strokeStyle = HALO; ctx.stroke();
+      ctx.fillStyle = POWER_CSS; ctx.fill();
+      if (!label) continue;
+      const text = powerText(waterPower(R.speed[i]));
+      ctx.lineWidth = 3; ctx.strokeStyle = HALO; ctx.strokeText(text, sx + 9, sy + 4);
+      ctx.fillStyle = POWER_CSS; ctx.fillText(text, sx + 9, sy + 4);
+    }
+  }
+  function drawExtras(ctx) {
+    const w = S.w, wd = wadingOf(w);
+    if (S.layers.fords && wd && wd.swim != null) {
+      if (S.detailOn) drawFootings(ctx, wd);
+      if (w.fords) drawFords(ctx);
+    }
+    if (S.layers.power && w.rivers.count) drawPower(ctx);
+  }
+  // The drift: white where it ran on the close-up's own 4 m currents, dashed where it had only the river lines or the
+  // sea's 48 m grid; a dot a minute, a bigger one every five; a ring where it began.
+  function drawDrift(ctx) {
+    const p = DRIFT.path;
+    if (!p || p.world !== S.w || p.n < 1) return;
+    const a = p.pts, solid = [], dashed = [], dots = [], big = [];
+    for (let k = 1; k < p.n; k++) {
+      const ax = toScreenX(a[3 * k - 3]), ay = toScreenY(a[3 * k - 2]), bx = toScreenX(a[3 * k]), by = toScreenY(a[3 * k + 1]);
+      (a[3 * k + 2] === 2 ? solid : dashed).push(ax, ay, bx, by);
+      if (k % (60 / DRIFT_STEP) === 0) (k % (300 / DRIFT_STEP) === 0 ? big : dots).push(bx, by);
+    }
+    ctx.lineCap = 'round';
+    strokeSegs(ctx, solid, HALO, 4.6);
+    strokeSegs(ctx, solid, '#ffffff', 2);
+    ctx.setLineDash([5, 4]);
+    strokeSegs(ctx, dashed, HALO, 4.2);
+    strokeSegs(ctx, dashed, '#ffffff', 1.8);
+    ctx.setLineDash([]);
+    const disc = (list, r) => {
+      if (!list.length) return;
+      ctx.beginPath();
+      for (let q = 0; q < list.length; q += 2) { ctx.moveTo(list[q] + r, list[q + 1]); ctx.arc(list[q], list[q + 1], r, 0, 2 * Math.PI); }
+      ctx.fillStyle = '#ffffff'; ctx.fill();
+      ctx.lineWidth = 1.2; ctx.strokeStyle = HALO; ctx.stroke();
+    };
+    disc(dots, 2.2);
+    disc(big, 3.6);
+    const sx = toScreenX(a[0]), sy = toScreenY(a[1]), k = 3 * (p.n - 1), ex = toScreenX(a[k]), ey = toScreenY(a[k + 1]);
+    ctx.beginPath(); ctx.arc(sx, sy, 7, 0, 2 * Math.PI);
+    ctx.lineWidth = 3.6; ctx.strokeStyle = HALO; ctx.stroke();
+    ctx.lineWidth = 1.8; ctx.strokeStyle = '#f0a65e'; ctx.stroke();
+    if (p.end === 'running') return;
+    ctx.beginPath(); ctx.arc(ex, ey, 4.5, 0, 2 * Math.PI);
+    ctx.fillStyle = '#f0a65e'; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = HALO; ctx.stroke();
+    const text = p.end === 'ashore' ? `ashore, ${Math.round(((p.n - 1) * DRIFT_STEP) / 60)} min` : `${p.minutes} min`;
+    ctx.font = '600 12px "IBM Plex Sans", "Segoe UI", sans-serif';
+    ctx.lineWidth = 3; ctx.strokeStyle = HALO; ctx.strokeText(text, ex + 9, ey + 4);
+    ctx.fillStyle = '#ffffff'; ctx.fillText(text, ex + 9, ey + 4);
+  }
+  function setDriftMode(on) {
+    DRIFT.on = on;
+    $('driftBtn').setAttribute('aria-pressed', String(on));
+    flow.classList.toggle('aiming', on);
+    if (on) setHowto(false);
+    updateDriftNote();
+  }
+  function clearDrift() {
+    DRIFT.token++;
+    DRIFT.path = null;
+    DRIFT.need.clear();
+    setDriftMode(false);
+    updateExtraKeys();
+    markDirty(false);
+  }
+  // The close-up square under a spot, fetched from the game when the atlas has it and it isn't here yet (kept from the
+  // view's own clearing out while the drift needs it); false once the drift is no longer wanted.
+  async function driftSquare(path, x, z, live) {
+    const w = path.world;
+    if (!w.atlas || !ATLAS.on || ATLAS.closed || DETAIL.stale || DETAIL.seed !== w.seed) return live();
+    const i = Math.floor(x / SQ), j = Math.floor(z / SQ), k = sqKey(i, j);
+    if (DETAIL.cache.has(k) || DRIFT.failed.has(k)) return live();
+    if (path.fetched >= DRIFT_SQUARES || (i + 0.5) ** 2 * SQ * SQ + (j + 0.5) ** 2 * SQ * SQ > (WORLD_EDGE + 200) ** 2) { DRIFT.failed.add(k); return live(); }
+    DRIFT.need.add(k);
+    path.fetched++;
+    updateDriftNote();
+    if (DETAIL.inflight.has(k)) { for (let waited = 0; DETAIL.inflight.has(k) && waited < 200 && live(); waited++) await wait(100); }
+    else await requestSquare({ i, j, k });
+    if (!DETAIL.cache.has(k)) DRIFT.failed.add(k);
+    return live();
+  }
+  // Something floating, let go at a spot at the clock's time: carried at Straumr's own share of the current for floating
+  // things ([Currents] Items: 1.18 x the current at 1), followed every 2 s (each step from the water half way along it) for
+  // the minutes chosen, with the tide running on from the clock as it goes. It stops where it washes up (dry ground, or a
+  // cell dry to the field). The rivers run at their usual flow; the rest is as waterNow leaves it.
+  async function startDrift(x, z, D0 = S.D) {
+    const w = S.w;
+    if (!w) return;
+    const token = ++DRIFT.token, carry = carryOf(w), steps = Math.round((DRIFT.minutes * 60) / DRIFT_STEP);
+    const pts = new Float32Array(3 * (steps + 1)), q = [0, 0, 0, 0], m = [0, 0, 0, 0];
+    const path = { world: w, x0: x, z0: z, D0, minutes: DRIFT.minutes, carry, pts, n: 1, end: 'running', fetched: 0, travelled: 0, guessed: false };
+    const live = () => token === DRIFT.token && S.w === w;
+    const ashore = o => o[2] < 0 || (o[2] === 2 && o[3] <= 0);
+    pts[0] = x; pts[1] = z; pts[2] = 2;
+    DRIFT.path = path;
+    DRIFT.failed.clear();
+    updateExtraKeys();
+    updateDriftNote();
+    markDirty(false);
+    for (let s = 0; s < steps; s++) {
+      if (!(await driftSquare(path, x, z, live))) return;
+      waterNow(w, squareIJ, x, z, tideAt(w, D0 + (s * DRIFT_STEP) / GAME_DAY), q);
+      if (ashore(q)) { path.end = 'ashore'; break; }
+      const mx = x + 0.5 * DRIFT_STEP * carry * q[0], mz = z + 0.5 * DRIFT_STEP * carry * q[1];
+      if (!(await driftSquare(path, mx, mz, live))) return;
+      waterNow(w, squareIJ, mx, mz, tideAt(w, D0 + ((s + 0.5) * DRIFT_STEP) / GAME_DAY), m);
+      if (ashore(m)) { path.end = 'ashore'; break; }
+      const nx = x + DRIFT_STEP * carry * m[0], nz = z + DRIFT_STEP * carry * m[1], src = Math.min(q[2], m[2]);
+      path.travelled += Math.hypot(nx - x, nz - z);
+      x = nx; z = nz;
+      pts[3 * path.n] = x; pts[3 * path.n + 1] = z; pts[3 * path.n + 2] = src;
+      path.n++;
+      if (src < 2) path.guessed = true;
+      if (path.n % 150 === 0) { updateDriftNote(); markDirty(false); }
+    }
+    if (!live()) return;
+    if (path.end === 'running') path.end = 'time';
+    DRIFT.need.clear();
+    updateDriftNote();
+    updateExtraKeys();
+    markDirty(false);
+  }
+  function updateDriftNote() {
+    const el = $('driftNote'), p = DRIFT.path;
+    let text = '';
+    if (p && p.world === S.w) {
+      const k = 3 * (p.n - 1), mins = ((p.n - 1) * DRIFT_STEP) / 60, away = Math.hypot(p.pts[k] - p.x0, p.pts[k + 1] - p.z0);
+      if (p.end === 'running') text = `Drifting… ${Math.floor(mins)} of ${p.minutes} min${p.fetched ? ` · close-up squares asked of the game: ${p.fetched}` : ''}`;
+      else if (p.n === 1) text = 'No water to float on there (zoom in on a river for its close-up, then click its water).';
+      else {
+        text = `${p.end === 'ashore' ? `Washes up after ${mins < 1 ? 'under a minute' : `${Math.round(mins)} min`}` : `After ${p.minutes} min`}` +
+          ` at x ${Math.round(p.pts[k])} z ${Math.round(p.pts[k + 1])}, ${kmText(away)} from where it was let go at ${clockText(p.D0)}` +
+          ` (${kmText(p.travelled)} along the way). Riding at ${p.carry.toFixed(2)}× the current, the rivers at usual flow, the tide running on;` +
+          ` no wind, waves, rocks or buildings, nor Rivers and Lakes water: an estimate.${p.guessed ? ' Dashed: no close-up there, so from the river lines or the 48 m sea grid.' : ''}`;
+        if (p.carry <= 0) text += " This map's Straumr doesn't carry floating things ([Currents] Items 0).";
+      }
+    } else if (DRIFT.on) text = 'Click the water to let something float from there.';
+    el.textContent = text;
+    el.hidden = !text;
+  }
+  // The legend's keys for these layers, or why there's nothing to show.
+  function updateExtraKeys() {
+    const el = $('extraKeys'), w = S.w, parts = [];
+    if (w && S.layers.fords) {
+      const wd = wadingOf(w);
+      if (!w.fords || !wd) parts.push(`<span class="key">Fords: none in this map (${w.demo ? 'a made-up island' : 'made by an older Straumr'})</span>`);
+      else if (wd.swim == null) parts.push('<span class="key">Fords: the game had no player to read the swim depth from</span>');
+      else {
+        parts.push(`<span class="key" title="The water stays under the depth the game starts you swimming at (${wd.swim.toFixed(2)} m) all the way across, at the river's usual level and the tide on the clock"><i class="ford"></i>Ford: under ${wd.swim.toFixed(1)} m all the way across now</span>`);
+        parts.push('<span class="key"><i class="ford-low"></i>Only nearer low water today</span>');
+        if (w.atlas) parts.push('<span class="key"><i class="foot-firm"></i>Close-up, usual flow: firm footing</span><span class="key"><i class="foot-push"></i>the current walks you downstream</span>');
+      }
+    }
+    if (w && S.layers.power) parts.push(`<span class="key" title="Kinetic power through each square metre facing the current, ½ρv³, from the channel's mean speed"><i class="power"></i>Water power, the strongest per area: ${powerText(POWER_MIN)} and up, ${w.atlas ? 'at usual flow' : 'as the rivers ran'}</span>`);
+    if (DRIFT.path && DRIFT.path.world === w) parts.push('<span class="key"><i class="drift"></i>Drift: a dot a minute</span>');
+    el.innerHTML = parts.join('');
+    el.hidden = !parts.length;
+  }
+  // The readout's lines for these layers at a spot: how deep it stands and what wading it would be; the ford or the power
+  // mark nearest it (within about 14 px); the water's power there now.
+  function extraRows(w, x, z, dq, row) {
+    const wd = wadingOf(w), t = S.tide, q = FX.q, th = FX.th, reach = Math.max(25, 14 / S.s), R = w.rivers;
+    const moving = () => waterNow(w, squareIJ, x, z, t, q);
+    if (S.layers.fords && wd && wd.swim != null) {
+      if (dq) {
+        const c = detailCellAt(dq, x, z), lev = dq.flow.level ? dq.flow.level[detailIndex(dq.flow, dq, x, z)] / 1000 : 0;
+        const depth = lev + tideHere(w, x, z, t, th)[1] - c.h;
+        if (depth > 0.02 && depth < Math.max(3, wd.swim + 1.5)) {
+          moving();
+          const drift = wadeDrift(depth, Math.hypot(q[0], q[1]), wd);
+          row('Wading', depth >= wd.swim ? `${depth.toFixed(2)} m deep now: you'd swim (from ${wd.swim.toFixed(2)} m)`
+            : drift > 0 ? `${depth.toFixed(2)} m deep now: the current walks you downstream at ${drift.toFixed(2)} m/s`
+              : `${depth.toFixed(2)} m deep now: firm footing, the current can't move you`, '');
+        }
+      }
+      let ford = null, best = reach;
+      if (w.fords) for (const f of fordMarks()) {
+        const d = Math.hypot(R.x[f.i] - x, R.z[f.i] - z);
+        if (d < best) { best = d; ford = f; }
+      }
+      if (ford) {
+        const lv = levelsAt(w, R.x[ford.i], R.z[ford.i]), spring = lv && lv.high > lv.usual + 0.005 ? `; the spring high water stands about ${(lv.high - lv.usual).toFixed(2)} m higher` : '';
+        row('Ford', `${ford.state === 2 ? 'wadeable now' : 'only nearer low water'}: the deepest across ${ford.deep.toFixed(2)} m now, ${ford.low.toFixed(2)} m at today's low water (you swim from ${wd.swim.toFixed(2)} m)${ford.length > 1 ? ` · ${Math.round(ford.length)} m of river like this` : ''}${spring}`);
+      }
+    }
+    if (S.layers.power) {
+      moving();
+      const sp = Math.hypot(q[0], q[1]);
+      if (q[2] >= 0 && q[3] > 0 && sp > 0.02) row('Water power', `${powerText(waterPower(sp))} here now (${sp.toFixed(2)} m/s${q[2] === 2 ? ", the close-up's 4 m currents" : q[2] === 1 ? ", the river line's mean" : ''})`);
+      let spot = -1, near = reach;
+      for (const i of powerMarks()) {
+        const d = Math.hypot(R.x[i] - x, R.z[i] - z);
+        if (d < near) { near = d; spot = i; }
+      }
+      if (spot >= 0) {
+        const qq = R.q ? ` · it carries ${R.q[spot] >= 10 ? Math.round(R.q[spot]) : R.q[spot].toFixed(1)} m³/s` : '';
+        row('Strongest near', `${powerText(waterPower(R.speed[spot]))}: its channel's mean ${R.speed[spot].toFixed(2)} m/s ${w.atlas ? 'at usual flow' : 'as it ran'}${qq}; mid-channel runs faster, the banks slower (zoom in)`);
+      }
+    }
+  }
+
+  // ---- the water players build: each dam's pool at its level (or the level picked in its box, or at the moment picked on
+  // its time scrubber) with the cells it can claim higher up, its wall, crest, way round (to its saddle), breach, gates
+  // and where it lets water out now; the river below it by the share of its water it carries and the surge on it, a
+  // bore's toe with its height; kept pools (their rim and mouth) and cofferdams (drained or not); the lab's damflood. From
+  // the records the game runs the water on: the file's block, or for the world you're in the atlas's /water every 1.5 s
+  // (kept for the scrubber). The page works nothing out again but which cells stand under a level, the game's own test.
+  const POOL_RGBA = [70, 150, 255, 150], CLAIM_RGBA = [255, 255, 255, 34], KEPT_RGBA = [64, 214, 196, 170], PATH_RGBA = [64, 214, 196, 80];
+  const BRIM_RGBA = [64, 214, 196, 40], RING_RGBA = [12, 26, 30, 230], DRY_RGBA = [214, 172, 110, 170], WET_RGBA = [120, 150, 190, 150];
+  const WALL_RGBA = [214, 206, 192, 255], CREST_RGBA = [255, 179, 71, 255];
+  const WALL_CSS = 'rgb(214, 206, 192)', CREST_CSS = '#ffb347', ROUND_CSS = '#ff6fd8', BREACH_CSS = '#ff5a4f', GATE_CSS = '#9fe870', OUTLET_CSS = '#7fe3ff', BORE_CSS = '#ffffff';
+  const WATER_POLL_MS = 1500, WATER_KEEP = 400; // the atlas's /water: asked this often while the world you're in shows; kept for the scrubber (10 min of it)
+  const WX = { hist: [], at: -1, busy: false, level: null, fill: false, claim: true, labAt: 0, imgs: new Map(), scratch: null };
+  const waterShown = () => (WX.hist.length ? WX.hist[WX.at >= 0 ? Math.min(WX.at, WX.hist.length - 1) : WX.hist.length - 1].W : null);
+  const pickedKey = () => (DBG.pick && DBG.pick.kind === 'water' ? DBG.pick.id : '');
+  const fmt = (v, d = 2) => (Number.isFinite(v) ? v.toFixed(d) : '–');
+  const signed = (v, d = 2) => (Number.isFinite(v) ? `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(d)}` : '–');
+  const flowText = q => (!Number.isFinite(q) ? '–' : Math.abs(q) >= 10 ? Math.round(q).toString() : q.toFixed(1));
+  const volText = v => (!Number.isFinite(v) ? '–' : v >= 1e6 ? `${(v / 1e6).toFixed(2)} hm³` : `${Math.round(v).toLocaleString()} m³`);
+  const haText = a => `${(a / 10000).toFixed(2)} ha`;
+  const WAY_KINDS = ["another river's water", 'the sea', 'a Rivers and Lakes lake', 'the river below the dam'];
+  function resetWater(w) {
+    WX.hist = w && w.water ? [{ W: w.water, real: null }] : [];
+    WX.at = -1;
+    WX.level = null;
+    WX.labAt = 0;
+    WX.imgs.clear();
+    updateWaterKeys();
+  }
+  // A new reading from the atlas: kept for the scrubber (one looking back stays on its moment), drawn if it's live.
+  function addWater(W) {
+    if (!W) return;
+    WX.hist.push({ W, real: Date.now() });
+    if (WX.hist.length > WATER_KEEP) {
+      WX.hist.shift();
+      if (WX.at > 0) WX.at--;
+    }
+    if (WX.at < 0) {
+      markDirty(false);
+      if (pickedKey()) updateCellBox();
+      if (S.hover) updateReadout();
+    } else if (pickedKey()) updateWaterTools();
+    updateWaterKeys();
+  }
+  async function pollWater() {
+    if (WX.busy || !ATLAS.on || ATLAS.closed || document.hidden || !S.w || !S.w.atlas || S.w.seed !== HERE || !S.layers.works) return;
+    WX.busy = true;
+    try {
+      const { status, body } = await getJSON(`/water?seed=${seedParam(HERE)}`);
+      if (status === 200 && body && S.w && S.w.seed === HERE) addWater(decodeWater(body));
+    } catch (e) { /* the atlas is closed or busy: the page keeps what it has */ } finally { WX.busy = false; }
+  }
+  // The level an item is drawn at: the one picked in its box, else the lab's frame on its scrubber (or, without a breach,
+  // the line's top or the level its water leaves at, the lower), else its level in the reading on show.
+  function shownLevel(id, live) {
+    if (WX.level && WX.level.id === id) return WX.level.h;
+    return live;
+  }
+  function labLevel(L) {
+    const B = L.breach;
+    if (B) return B.level[Math.min(WX.labAt, B.frames - 1)];
+    return Number.isFinite(L.spill) ? Math.min(L.crest, L.spill) : L.crest;
+  }
+  // A pool's footprint at level h, a pixel a 4 m cell (north up): its water under h; the cells it can reach higher up
+  // its tables faintly (Cells it can claim); or every cell it can reach by the level it's reached at (Colour by fill
+  // level: low blue to high amber, brighter under h). Made again only as h crosses a step of its tables.
+  function poolImg(id, p, h) {
+    const under = Math.ceil((h - p.h0) / p.dh - 1e-6), key = `${under}|${WX.fill}|${WX.claim}`, had = WX.imgs.get(id);
+    if (had && had.p === p.e && had.key === key) return had.canvas;
+    const c = (had && had.canvas) || document.createElement('canvas');
+    c.width = p.w; c.height = p.h;
+    const ctx = c.getContext('2d'), img = ctx.createImageData(p.w, p.h), d = img.data, top = p.v.length - 1;
+    for (let b = 0; b < p.h; b++)
+      for (let a = 0; a < p.w; a++) {
+        const e = p.e[b * p.w + a];
+        if (e === NEVER) continue;
+        const o = ((p.h - 1 - b) * p.w + a) * 4, wet = e < under;
+        let rgba = wet ? POOL_RGBA : WX.claim ? CLAIM_RGBA : null;
+        if (WX.fill) {
+          const t = Math.min(1, e / Math.max(1, top)), rgb = mix([60, 120, 255], [255, 190, 70], t);
+          rgba = [rgb[0], rgb[1], rgb[2], wet ? 200 : 90];
+        }
+        if (!rgba) continue;
+        d[o] = rgba[0]; d[o + 1] = rgba[1]; d[o + 2] = rgba[2]; d[o + 3] = rgba[3];
+      }
+    ctx.putImageData(img, 0, 0);
+    WX.imgs.set(id, { p: p.e, key, canvas: c });
+    return c;
+  }
+  // A dam's barrier box, a pixel a half-metre cell: `cut` opaque on its wall and the water below it (where its pool is
+  // never drawn), else its wall with the crest's passes in amber.
+  function boxImg(id, box, cut) {
+    const k = `${id}|${cut ? 'cut' : 'wall'}`, had = WX.imgs.get(k);
+    if (had && had.p === box.mask) return had.canvas;
+    const c = document.createElement('canvas');
+    c.width = box.w; c.height = box.h;
+    const ctx = c.getContext('2d'), img = ctx.createImageData(box.w, box.h), d = img.data;
+    for (let b = 0; b < box.h; b++)
+      for (let a = 0; a < box.w; a++) {
+        const m = box.mask[b * box.w + a], o = ((box.h - 1 - b) * box.w + a) * 4;
+        const rgba = cut ? (m & 3 ? [0, 0, 0, 255] : null) : m & 8 ? CREST_RGBA : m & 1 ? WALL_RGBA : null;
+        if (!rgba) continue;
+        d[o] = rgba[0]; d[o + 1] = rgba[1]; d[o + 2] = rgba[2]; d[o + 3] = rgba[3];
+      }
+    ctx.putImageData(img, 0, 0);
+    WX.imgs.set(k, { p: box.mask, canvas: c });
+    return c;
+  }
+  // A kept pool's or a cofferdam's cells: its own (a kept pool's by its state, a cofferdam's drained or not), the cells it's
+  // joined through, its brim, the ring round the inside.
+  function cellsImg(id, g, own) {
+    const k = `${id}|${own.join(',')}`, had = WX.imgs.get(k);
+    if (had && had.p === g.mask) return had.canvas;
+    const c = document.createElement('canvas');
+    c.width = g.w; c.height = g.h;
+    const ctx = c.getContext('2d'), img = ctx.createImageData(g.w, g.h), d = img.data;
+    for (let b = 0; b < g.h; b++)
+      for (let a = 0; a < g.w; a++) {
+        const m = g.mask[b * g.w + a], o = ((g.h - 1 - b) * g.w + a) * 4;
+        const rgba = m & 8 ? RING_RGBA : m & 1 ? own : m & 2 ? PATH_RGBA : m & 4 ? BRIM_RGBA : null;
+        if (!rgba) continue;
+        d[o] = rgba[0]; d[o + 1] = rgba[1]; d[o + 2] = rgba[2]; d[o + 3] = rgba[3];
+      }
+    ctx.putImageData(img, 0, 0);
+    WX.imgs.set(k, { p: g.mask, canvas: c });
+    return c;
+  }
+  // An image on its world rectangle (south-west corner x0, z0; cell m a pixel).
+  function drawOn(ctx, img, x0, z0, w, h, cell) {
+    ctx.drawImage(img, toScreenX(x0), toScreenY(z0 + h * cell), w * cell * S.s, h * cell * S.s);
+  }
+  function scratchCtx() {
+    const c = WX.scratch || (WX.scratch = document.createElement('canvas'));
+    if (c.width !== base.width || c.height !== base.height) { c.width = base.width; c.height = base.height; }
+    const ctx = c.getContext('2d');
+    ctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
+    ctx.clearRect(0, 0, S.W, S.H);
+    ctx.imageSmoothingEnabled = false;
+    return ctx;
+  }
+  const onScreen = (x, z, m) => { const sx = toScreenX(x), sy = toScreenY(z); return sx > -m && sy > -m && sx < S.W + m && sy < S.H + m; };
+  function label(ctx, text, x, z, css, dx = 9, dy = 4) {
+    const sx = toScreenX(x) + dx, sy = toScreenY(z) + dy;
+    ctx.font = '600 11px "IBM Plex Mono", Consolas, monospace';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 3; ctx.strokeStyle = HALO; ctx.strokeText(text, sx, sy);
+    ctx.fillStyle = css; ctx.fillText(text, sx, sy);
+  }
+  function dot(ctx, x, z, r, css, shape) {
+    const sx = toScreenX(x), sy = toScreenY(z);
+    ctx.beginPath();
+    if (shape === 'diamond') { ctx.moveTo(sx, sy - r); ctx.lineTo(sx + r, sy); ctx.lineTo(sx, sy + r); ctx.lineTo(sx - r, sy); ctx.closePath(); }
+    else if (shape === 'square') ctx.rect(sx - r, sy - r, 2 * r, 2 * r);
+    else ctx.arc(sx, sy, r, 0, 2 * Math.PI);
+    ctx.lineWidth = 3; ctx.strokeStyle = HALO; ctx.stroke();
+    ctx.fillStyle = css; ctx.fill();
+  }
+  // A pool, clipped off its dam's wall and the water below it, onto the map.
+  function drawPoolCut(ctx, id, p, h, box) {
+    const img = poolImg(id, p, h);
+    if (!box) { drawOn(ctx, img, p.x0, p.z0, p.w, p.h, p.cell); return; }
+    const sc = scratchCtx();
+    drawOn(sc, img, p.x0, p.z0, p.w, p.h, p.cell);
+    sc.globalCompositeOperation = 'destination-out';
+    drawOn(sc, boxImg(id, box, true), box.x0, box.z0, box.w, box.h, box.cell);
+    sc.globalCompositeOperation = 'source-over';
+    ctx.drawImage(WX.scratch, 0, 0, S.W, S.H);
+  }
+  // The river below a dam: its walk to its own river's end, coloured by the share of its water it carries (amber short
+  // of it, blue over it), wider where the surge stands high; each bore's toe a bar across it with its height.
+  function drawBelow(ctx, B, rise, share) {
+    const k = B.walk;
+    if (!k || k.n < 2) return;
+    const end = k.mouth;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < end; i++) {
+      const f = share ? share[i] : 1, r = rise ? rise[i] : 0;
+      const t = Math.max(-1, Math.min(1, f - 1)), rgb = t < 0 ? mix([235, 240, 245], [255, 150, 60], -t) : mix([235, 240, 245], [80, 160, 255], t);
+      ctx.strokeStyle = `rgba(${rgb.map(Math.round).join(',')}, 0.9)`;
+      ctx.lineWidth = 2 + Math.min(8, Math.abs(r) * 12);
+      ctx.beginPath();
+      ctx.moveTo(toScreenX(k.x[i]), toScreenY(k.z[i]));
+      ctx.lineTo(toScreenX(k.x[i + 1]), toScreenY(k.z[i + 1]));
+      ctx.stroke();
+    }
+    for (const b of B.bores || []) {
+      if (!Number.isFinite(b.x) || b.past) continue;
+      let i = 0;
+      while (i + 1 < k.n && k.along[i + 1] <= b.along) i++;
+      const j = Math.min(i + 1, k.n - 1), ux = k.x[j] - k.x[i], uz = k.z[j] - k.z[i], l = Math.hypot(ux, uz) || 1, half = 14;
+      const sx = toScreenX(b.x), sy = toScreenY(b.z), ax = (-uz / l) * half, ay = (-ux / l) * half;
+      strokeSegs(ctx, [sx - ax, sy - ay, sx + ax, sy + ay], HALO, 6);
+      strokeSegs(ctx, [sx - ax, sy - ay, sx + ax, sy + ay], BORE_CSS, 3);
+      label(ctx, `bore ${signed(b.height)} m`, b.x, b.z, BORE_CSS, 12, -8);
+    }
+  }
+  function drawDam(ctx, d, W, big) {
+    const h = d.now ? shownLevel(`d${d.key}`, d.now.level) : NaN;
+    if (d.pool && Number.isFinite(h)) drawPoolCut(ctx, `d${d.key}`, d.pool, h, d.box);
+    else if (d.pool && WX.claim) drawPoolCut(ctx, `d${d.key}`, d.pool, -Infinity, d.box);
+    if (d.box && big) drawOn(ctx, boxImg(`d${d.key}`, d.box, false), d.box.x0, d.box.z0, d.box.w, d.box.h, d.box.cell);
+    const B = W.below.get(d.key);
+    if (B) drawBelow(ctx, B, B.walk && B.walk.rise, B.walk && B.walk.share);
+    if (d.wayRound) {
+      ctx.setLineDash([5, 5]);
+      strokeSegs(ctx, [toScreenX(d.x), toScreenY(d.z), toScreenX(d.wayRound.x), toScreenY(d.wayRound.z)], ROUND_CSS, 1.4);
+      ctx.setLineDash([]);
+      dot(ctx, d.wayRound.x, d.wayRound.z, 6, ROUND_CSS, 'diamond');
+      if (big) label(ctx, `way round ${fmt(d.wayRound.level)} (${signed(d.wayRound.level - d.natural)})`, d.wayRound.x, d.wayRound.z, ROUND_CSS);
+    }
+    if (big) {
+      const c = d.crest || {};
+      for (let r = 0; r < (c.level || []).length; r++)
+        if (Number.isFinite(c.x[r]) && c.level[r] <= d.crestLow + 0.1) dot(ctx, c.x[r], c.z[r], 3.5, CREST_CSS);
+      for (const o of d.outlets || []) {
+        if (!Number.isFinite(o.x)) continue;
+        const sx = toScreenX(o.x), sy = toScreenY(o.z), ax = o.ax * o.half * S.s, ay = -o.az * o.half * S.s;
+        strokeSegs(ctx, [sx - ax, sy - ay, sx + ax, sy + ay], OUTLET_CSS, 2);
+      }
+      for (const g of d.gates || []) dot(ctx, g.x, g.z, 4 + 3 * (g.open || 0), GATE_CSS, 'square');
+      if (d.breach) {
+        dot(ctx, d.breach.x, d.breach.z, 5, BREACH_CSS);
+        if (d.breach.hole) dot(ctx, d.breach.hole.x, d.breach.hole.z, 4, BREACH_CSS, 'square');
+      }
+    }
+    dot(ctx, d.x, d.z, big ? 4 : 5, d.whole ? WALL_CSS : BREACH_CSS);
+    label(ctx, `Dam ${d.id}${Number.isFinite(h) ? ` ${fmt(h)}` : ` · ${d.state}`}`, d.x, d.z, '#e4edf0');
+  }
+  function drawLab(ctx, L, big) {
+    const h = shownLevel('lab', labLevel(L));
+    if (L.pool) drawPoolCut(ctx, 'lab', L.pool, h, null);
+    const [x0, z0, x1, z1] = L.line;
+    strokeSegs(ctx, [toScreenX(x0), toScreenY(z0), toScreenX(x1), toScreenY(z1)], HALO, 7);
+    strokeSegs(ctx, [toScreenX(x0), toScreenY(z0), toScreenX(x1), toScreenY(z1)], WALL_CSS, 4);
+    const B = L.breach;
+    if (B && B.walk) {
+      const m = B.walk.mouth + 1, f = Math.min(WX.labAt, B.frames - 1);
+      drawBelow(ctx, { walk: B.walk, bores: [] }, B.surge.subarray(f * m, f * m + m), null);
+    }
+    if (L.wayRound) {
+      ctx.setLineDash([5, 5]);
+      strokeSegs(ctx, [toScreenX(L.x), toScreenY(L.z), toScreenX(L.wayRound.x), toScreenY(L.wayRound.z)], ROUND_CSS, 1.4);
+      ctx.setLineDash([]);
+      dot(ctx, L.wayRound.x, L.wayRound.z, 6, ROUND_CSS, 'diamond');
+      if (big) label(ctx, `way round ${fmt(L.wayRound.level)} (${signed(L.wayRound.level - L.natural)})`, L.wayRound.x, L.wayRound.z, ROUND_CSS);
+    }
+    label(ctx, `Lab dam ${fmt(h)}${B ? ` · ${Math.round(B.t[Math.min(WX.labAt, B.frames - 1)])} s` : ''}`, L.x, L.z, '#e4edf0');
+  }
+  function drawWater(ctx) {
+    const W = waterShown();
+    if (!W) return;
+    const big = S.s >= 0.25; // 4 m a pixel or closer: walls, crests, gates and labels
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    for (const c of W.coffers) {
+      if (!c.cells) continue;
+      drawOn(ctx, cellsImg(`c${c.id}`, c.cells, c.drained ? DRY_RGBA : WET_RGBA), c.cells.x0, c.cells.z0, c.cells.w, c.cells.h, c.cells.cell);
+      if (c.gap) dot(ctx, c.gap.x, c.gap.z, 4, BREACH_CSS);
+      if (big || onScreen(c.mid[0], c.mid[1], 0)) label(ctx, `Cofferdam ${c.id}${c.sealed ? '' : ' (open)'}`, c.mid[0], c.mid[1], '#e9d3b0');
+    }
+    for (const p of W.pools) {
+      if (!p.cells) continue;
+      const own = p.state === 'Held' ? KEPT_RGBA : [KEPT_RGBA[0], KEPT_RGBA[1], KEPT_RGBA[2], 110];
+      drawOn(ctx, cellsImg(`k${p.key}`, p.cells, own), p.cells.x0, p.cells.z0, p.cells.w, p.cells.h, p.cells.cell);
+      if (big) {
+        dot(ctx, p.rim[1], p.rim[2], 3.5, CREST_CSS, 'diamond');
+        dot(ctx, p.mouth[0], p.mouth[1], 3, OUTLET_CSS);
+        if (p.gap) dot(ctx, p.gap.x, p.gap.z, 4, BREACH_CSS);
+      }
+      label(ctx, `Pool ${p.id} ${fmt(p.level)}`, p.bed[1], p.bed[2], 'rgb(120, 236, 222)');
+    }
+    for (const d of W.dams) drawDam(ctx, d, W, big);
+    if (W.lab) drawLab(ctx, W.lab, big);
+    ctx.restore();
+  }
+  // The item picked, outlined on the marks layer.
+  function drawWaterPick(p) {
+    const W = waterShown(), it = W && waterItem(W, p.id);
+    if (!it) return;
+    const g = it.kind === 'dam' ? it.v.box || it.v.pool : it.kind === 'lab' ? it.v.pool : it.v.cells;
+    if (!g) return;
+    const x0 = toScreenX(g.x0), y0 = toScreenY(g.z0 + g.h * g.cell), w = g.w * g.cell * S.s, h = g.h * g.cell * S.s;
+    mctx.lineWidth = 3.6; mctx.strokeStyle = HALO; mctx.strokeRect(x0, y0, w, h);
+    mctx.lineWidth = 1.6; mctx.strokeStyle = '#ffffff'; mctx.strokeRect(x0, y0, w, h);
+  }
+  function waterItem(W, id) {
+    const kind = id[0], key = id.slice(1);
+    if (kind === 'd') { const v = W.dams.find(d => d.key === key); return v && { kind: 'dam', v }; }
+    if (kind === 'k') { const v = W.pools.find(p => p.key === key); return v && { kind: 'kept', v }; }
+    if (kind === 'c') { const v = W.coffers.find(c => String(c.id) === key); return v && { kind: 'coffer', v }; }
+    return id === 'lab' && W.lab ? { kind: 'lab', v: W.lab } : null;
+  }
+  // What the water players build has at a spot: a dam near it, the pool over it (at the level drawn), a kept pool's or a
+  // cofferdam's cells, the lab's pool; `reach` m round a dam's cut, a kept pool's bed or the lab's line counts.
+  function waterAt(W, x, z, reach) {
+    for (const d of W.dams) if (Math.hypot(d.x - x, d.z - z) <= reach) return { id: `d${d.key}`, kind: 'dam', v: d };
+    if (W.lab && Math.hypot(W.lab.x - x, W.lab.z - z) <= reach) return { id: 'lab', kind: 'lab', v: W.lab };
+    for (const d of W.dams) {
+      const h = d.now ? shownLevel(`d${d.key}`, d.now.level) : NaN;
+      if (d.pool && poolCovers(d.pool, d.box, Math.min(d.natural, d.floor), x, z, h)) return { id: `d${d.key}`, kind: 'dam', v: d, inPool: true };
+    }
+    for (const p of W.pools) { const k = rasterCell(p.cells, x, z); if (k >= 0 && p.cells.mask[k] & 3) return { id: `k${p.key}`, kind: 'kept', v: p, path: !(p.cells.mask[k] & 1) }; }
+    for (const c of W.coffers) { const k = rasterCell(c.cells, x, z); if (k >= 0 && c.cells.mask[k] & 9) return { id: `c${c.id}`, kind: 'coffer', v: c }; }
+    if (W.lab && poolCovers(W.lab.pool, null, W.lab.natural, x, z, shownLevel('lab', labLevel(W.lab)))) return { id: 'lab', kind: 'lab', v: W.lab, inPool: true };
+    return null;
+  }
+  // The river below a dam nearest a spot (within `reach` m): its walk's point there.
+  function belowAt(W, x, z, reach) {
+    let best = null;
+    for (const d of W.dams) {
+      const B = W.below.get(d.key), k = B && B.walk;
+      if (!k) continue;
+      for (let i = 0; i <= k.mouth; i++) {
+        const dist = Math.hypot(k.x[i] - x, k.z[i] - z);
+        if (dist < reach) { reach = dist; best = { d, B, i }; }
+      }
+    }
+    return best;
+  }
+  // A dam in a line: what it does now, from its record.
+  function damWords(d) {
+    if (d.state !== 'Judged') return { Bypassed: 'bypassed: the water goes round it at the river\'s own level', TooBig: 'its pool would reach past what the server looks at: not judged', Tidal: 'in the tidal reach: not judged yet', Flooding: 'the server is working out its pool', Failed: 'its pool couldn\'t be worked out' }[d.state] || d.state;
+    if (!d.now) return 'its pool isn\'t worked out yet';
+    const n = d.now, parts = [d.whole ? (n.spilling ? 'spilling' : 'closed') : 'breached'];
+    if (n.level >= d.pool.top - 0.01) parts.push('held at the cap');
+    else if (n.rising > 0.005) parts.push(`rising ${fmt(n.rising)} m an hour (in-game)`);
+    else if (n.rising < -0.005) parts.push(`falling ${fmt(-n.rising)} m an hour (in-game)`);
+    else parts.push('steady');
+    const open = (d.gates || []).filter(g => g.open > 0).length;
+    if (open) parts.push(`${open} gate${open > 1 ? 's' : ''} open`);
+    return parts.join(', ');
+  }
+  // The readout's lines for the water players build at a spot.
+  function waterRows(x, z, row) {
+    const W = waterShown();
+    if (!W || !S.layers.works) return;
+    const hit = waterAt(W, x, z, Math.max(3, 12 / S.s));
+    if (hit && hit.kind === 'dam') {
+      const d = hit.v, n = d.now, h = n ? shownLevel(hit.id, n.level) : NaN;
+      row(`Dam ${d.id}`, `${esc(damWords(d))}${n ? ` · its pool at ${fmt(h)} (${signed(h - d.natural)} over the river's ordinary), ${haText(tableAt(d.pool, d.pool.a, h))}` : ''}`);
+      if (n) row('Its water', `${flowText(n.inflow)} m³/s in, ${flowText(n.outflow)} out (${flowText(n.toRiver)} to the river below); ${volText(n.stored)} stored`);
+      if (hit.inPool) { const c = poolCellAt(d.pool, x, z); row('This cell', `under the pool from ${fmt(cellLevel(d.pool, c))}`); }
+    } else if (hit && hit.kind === 'kept') {
+      const p = hit.v;
+      row(`Kept pool ${p.id}`, `${esc(keptWords(p))}${hit.path ? ' · the cells it\'s joined through' : ''}`);
+    } else if (hit && hit.kind === 'coffer') {
+      const c = hit.v;
+      row(`Cofferdam ${c.id}`, `${c.sealed ? (c.drained ? 'closed, drained' : 'closed, draining') : 'open, refilling'}: its water ${fmt(c.down)} m under the water outside (dry at ${fmt(c.dry)})`);
+    } else if (hit && hit.kind === 'lab') {
+      const L = hit.v, h = shownLevel('lab', labLevel(L));
+      row('Lab dam', `damflood across river ${L.river}: its pool at ${fmt(h)} (${signed(h - L.natural)}), ${haText(tableAt(L.pool, L.pool.a, h))}${L.bypassed ? ' · bypassed' : L.tooBig ? ' · too big' : ''}`);
+    } else if (!hit && WX.claim) {
+      for (const d of W.dams) {
+        const c = d.pool ? poolCellAt(d.pool, x, z) : -1;
+        if (c >= 0 && d.pool.e[c] !== NEVER) { row(`Dam ${d.id}`, `its pool reaches here at ${fmt(cellLevel(d.pool, c))} (${signed(cellLevel(d.pool, c) - d.natural)} over the river's ordinary)`); break; }
+      }
+    }
+    const b = belowAt(W, x, z, Math.max(20, 12 / S.s));
+    if (b) {
+      const k = b.B.walk, i = b.i;
+      row(`Below dam ${b.d.id}`, `${Math.round(k.along[i])} m down: the river carries ${Math.round((k.share ? k.share[i] : 1) * 100)}% of its water${k.rise && Math.abs(k.rise[i]) > 0.0005 ? `, the surge ${signed(k.rise[i])} m (${signed(k.drawn[i])} drawn)` : ''}${b.B.runs ? ' · a front runs' : ''}`);
+    }
+  }
+  function keptWords(p) {
+    const state = p.state === 'Held' ? `held at ${fmt(p.level)}` : p.state === 'Joined' ? `joined to the water outside${p.dammed ? " (a dam's pool)" : ''}, at ${fmt(p.level)}`
+      : p.merging ? `coming level with another pool at ${fmt(p.target)}` : `${p.over ? 'filling over its rim' : p.apart < 0 ? 'filling through a gap' : 'draining through a gap'}, ${signed(p.apart)} m against the water outside${p.left > 0 ? `, level in ${(p.left / 60).toFixed(1)} real min` : ''}`;
+    return `${state}; rim ${fmt(p.rim[0])}, bed ${fmt(p.bed[0])}, ${Math.round(p.area)} m²`;
+  }
+  // Clicking the map: the water players build there, picked (null: nothing of it there).
+  function waterPick(px, py) {
+    const W = S.layers.works && waterShown();
+    if (!W) return null;
+    const [x, z] = toWorld(px, py), hit = waterAt(W, x, z, Math.max(3, 14 / S.s));
+    return hit ? { kind: 'water', id: hit.id, key: `w${hit.id}` } : null;
+  }
+  // The box's lines for a picked item: everything its record says now.
+  function waterRowsFor(p, row, notes) {
+    const W = waterShown(), it = W && waterItem(W, p.id);
+    if (!it) { $('cellTitle').textContent = 'Gone'; notes.push('Not in this reading: it went (or the server dropped it).'); return; }
+    const v = it.v;
+    if (it.kind === 'dam') {
+      $('cellTitle').textContent = `Dam ${v.id}`;
+      const n = v.now, h = n ? shownLevel(p.id, n.level) : NaN;
+      row('Now', esc(damWords(v)));
+      row('Where', `x ${Math.round(v.x)} z ${Math.round(v.z)} · river ${v.river} · its usual ${flowText(v.q0)} m³/s, ${Math.round(2 * v.half)} m wide`);
+      if (n) {
+        row('Level', `${fmt(h)} m (${signed(h - v.natural)} over the river's ordinary ${fmt(v.natural)})${h !== n.level ? ` · now ${fmt(n.level)}` : ''}; settles at ${fmt(n.steady)}`);
+        row('Area', `${haText(tableAt(v.pool, v.pool.a, h))}${h !== n.level ? ` (now ${haText(n.area)})` : ''}`);
+        row('Stored', `${volText(n.stored)} over the river's ordinary level (${volText(n.volume)} over the tables' floor ${fmt(v.pool.h0)})`);
+        row('In / out', `${flowText(n.inflow)} m³/s in (stamped); ${flowText(n.outflow)} out: ${flowText(n.toRiver)} to the river below${n.outflow - n.toRiver > 0.05 ? `, ${flowText(n.outflow - n.toRiver)} round it` : ''}`);
+      }
+      const c = v.crest || { level: [] };
+      row('Crest', Number.isFinite(v.crestLow) ? `${fmt(v.crestLow)} (${signed(v.crestLow - v.natural)}); ${c.level.length} run${c.level.length === 1 ? '' : 's'}, ${fmt(c.level.reduce((s, l, r) => (l <= v.crestLow + 0.1 ? s + c.width[r] : s), 0), 1)} m within 10 cm of the lowest` : 'none');
+      const spill = Math.min(v.crestLow, v.wayRound ? v.wayRound.level : Infinity);
+      row('Spills at', Number.isFinite(spill) ? `${fmt(spill)} (${spill === v.crestLow ? 'over its crest' : 'round it'})` : 'never within its tables');
+      row('Way round', v.wayRound ? `${fmt(v.wayRound.level)} (${signed(v.wayRound.level - v.natural)}) at x ${Math.round(v.wayRound.x)} z ${Math.round(v.wayRound.z)}, into ${WAY_KINDS[v.wayRound.kind] || 'other water'}, ${Math.round(v.wayRound.width)} m wide` : 'none found');
+      if (v.breach) row('Breach', `${v.breach.gap > 0 ? `a ${fmt(v.breach.gap, 1)} m gap, its sill ${fmt(v.breach.sill)}` : ''}${v.breach.hole ? ` · a hole ${fmt(v.breach.hole.width, 1)} m wide, ${fmt(v.breach.hole.sill)} up to ${fmt(v.breach.hole.soffit)}` : ''}`, 'warn', BREACH_CSS);
+      (v.gates || []).forEach((g, k) => row(`Gate ${k + 1}`, `${Math.round(g.open * 100)}% open${Math.abs(g.open - g.to) > 0.005 ? ` (to ${Math.round(g.to * 100)}%)` : ''} · sill ${fmt(g.sill)}${g.soffit != null ? `, lintel ${fmt(g.soffit)}` : ''}, ${fmt(g.width, 1)} m · ${flowText(g.flow)} m³/s now, ${flowText(g.full)} fully open`, '', GATE_CSS));
+      const B = W.below.get(v.key), k = B && B.walk;
+      if (k) {
+        const at = [50, 150, 750].map(m => { let i = 0; while (i < k.mouth && k.along[i] < m) i++; return `${Math.round(k.along[i])} m ${Math.round((k.share ? k.share[i] : 1) * 100)}%${k.rise && Math.abs(k.rise[i]) > 0.0005 ? ` ${signed(k.rise[i])} m` : ''}`; });
+        row('River below', `${at.join(' · ')} (share of its water, surge) · ${B.runs ? 'a front runs' : 'at rest'}; its river ends ${Math.round(k.along[k.mouth])} m down`);
+        for (const b of B.bores || []) row('Bore', `left ${Math.round(b.since)} s ago (${signed(b.by, 1)} m³/s): its toe ${Math.round(b.along)} m down at x ${Math.round(b.x)} z ${Math.round(b.z)}, ${signed(b.height)} m high${b.past ? ', past its river\'s end' : ''}`, '', BORE_CSS);
+      } else if (v.state === 'Judged') row('River below', 'no change on it now (or this game hasn\'t walked it)');
+      if (v.pool) {
+        let all = 0, under = 0, wall = 0;
+        for (let b = 0; b < v.pool.h; b++)
+          for (let a = 0; a < v.pool.w; a++) {
+            const e = v.pool.e[b * v.pool.w + a];
+            if (e === NEVER) continue;
+            all++;
+            if (!(v.pool.h0 + e * v.pool.dh < h)) continue;
+            under++;
+            const kk = rasterCell(v.box, v.pool.x0 + (a + 0.5) * v.pool.cell, v.pool.z0 + (b + 0.5) * v.pool.cell);
+            if (kk >= 0 && v.box.mask[kk] & 2) wall++;
+          }
+        row('Cells', `${all.toLocaleString()} of 4 m it can claim up to ${fmt(v.pool.top)}; ${under.toLocaleString()} under ${fmt(h)}${wall ? `; ${wall} of them have their middle on the water below its wall (never drawn there)` : ''}`, wall ? 'warn' : '');
+      }
+      row('Record', `key ${v.key} · reach ${v.reachKey}${v.found ? ' · found standing' : ''}${n ? ` · checkpoint ${Math.round(n.checkpoint)} s` : ''}`);
+      return;
+    }
+    if (it.kind === 'kept') {
+      $('cellTitle').textContent = `Kept pool ${v.id}`;
+      row('Now', esc(keptWords(v)));
+      row('Rim', `${fmt(v.rim[0])} at x ${Math.round(v.rim[1])} z ${Math.round(v.rim[2])}: the lowest the water outside must stand to reach it`, '', CREST_CSS);
+      row('Mouth', `x ${Math.round(v.mouth[0])} z ${Math.round(v.mouth[1])}${v.carry > 0.005 ? ` · ${fmt(v.carry)} m of a dam's pool carried in` : ''}`, '', OUTLET_CSS);
+      if (v.gap) row('Gap', `${fmt(v.gap.width, 1)} m, its sill ${fmt(v.gap.sill)}`, '', BREACH_CSS);
+      row('Record', `key ${v.key}${v.capped ? ' · at the cap' : ''}`);
+      return;
+    }
+    if (it.kind === 'coffer') {
+      $('cellTitle').textContent = `Cofferdam ${v.id}`;
+      row('Now', `${v.sealed ? (v.drained ? 'closed, drained' : 'closed, draining') : 'open, refilling'}${v.found ? ' · found closed' : ''}`);
+      row('Drawn down', `its water ${fmt(v.down)} m under the water outside (${fmt(v.usual)} at its bed, without the tide), so about ${fmt(v.usual - v.down)}; dry at ${fmt(v.dry)} down`);
+      row('Bed / top', `${fmt(v.bed)} · the lowest top round it ${fmt(v.crest)} · the highest water outside reckoned with ${fmt(v.high)}`);
+      row('Area', `${Math.round(v.area)} m²`);
+      if (v.gap) row('Gap', `${fmt(v.gap.width, 1)} m, its sill ${fmt(v.gap.sill)}`, '', BREACH_CSS);
+      return;
+    }
+    $('cellTitle').textContent = 'Lab dam (damflood)';
+    const h = shownLevel('lab', labLevel(v)), B = v.breach;
+    row('Line', `across river ${v.river} at x ${Math.round(v.x)} z ${Math.round(v.z)}, its top ${fmt(v.crest)} (${signed(v.crest - v.natural)}); the river's usual ${flowText(v.q)} m³/s`);
+    row('Level', `${fmt(h)} (${signed(h - v.natural)}) · ${haText(tableAt(v.pool, v.pool.a, h))}, ${volText(Math.max(0, tableAt(v.pool, v.pool.v, h) - tableAt(v.pool, v.pool.v, v.natural)))} over the river's level`);
+    row('Leaves at', `${fmt(v.spill)}${Number.isFinite(v.edge) ? ` · its box's edge reached at ${signed(v.edge - v.natural)}` : ''}${v.bypassed ? ' · BYPASSED' : v.tooBig ? ' · TOO BIG' : ''} · ${v.reached.toLocaleString()} cells reached, ${v.cut} let go past the sill`);
+    row('Way round', v.wayRound ? `${fmt(v.wayRound.level)} (${signed(v.wayRound.level - v.natural)}) at x ${Math.round(v.wayRound.x)} z ${Math.round(v.wayRound.z)}, into ${WAY_KINDS[v.wayRound.kind] || 'other water'}` : 'none found');
+    if (B) {
+      const f = Math.min(WX.labAt, B.frames - 1), m = B.walk.mouth + 1;
+      let top = 0, at = 0;
+      for (let i = 0; i < m; i++) if (B.surge[f * m + i] > top) { top = B.surge[f * m + i]; at = i; }
+      row('Breach', `${fmt(B.gap, 1)} m down to ${fmt(B.sill)}${B.soffit != null ? `, a hole up to ${fmt(B.soffit)}` : ''}, the pool from ${fmt(B.from)}`, 'warn', BREACH_CSS);
+      row('At', `${Math.round(B.t[f])} s: the pool ${fmt(B.level[f])}, ${flowText(B.out[f])} m³/s out; the surge's top ${signed(top)} m at ${Math.round(B.walk.along[at])} m down`);
+    }
+  }
+  // The box's controls for a dam's pool or the lab's: the level it's drawn at, and the time scrubber (the readings the
+  // atlas has had, or the lab breach's frames).
+  function updateWaterTools() {
+    const p = DBG.pick, box = $('waterTools'), W = waterShown(), it = p && p.kind === 'water' && W && waterItem(W, p.id);
+    box.hidden = !it;
+    if (!it) return;
+    const pool = it.kind === 'dam' || it.kind === 'lab' ? it.v.pool : null;
+    $('waterLevelRow').hidden = !pool;
+    $('waterFillRow').hidden = !pool;
+    if (pool) {
+      const live = it.kind === 'dam' ? (it.v.now ? it.v.now.level : pool.h0) : labLevel(it.v), h = shownLevel(p.id, live), el = $('waterLevel');
+      el.min = pool.h0; el.max = pool.top; el.step = pool.dh;
+      if (document.activeElement !== el) el.value = h;
+      $('waterLevelText').textContent = `${fmt(h)}${WX.level && WX.level.id === p.id ? '' : ' (now)'}`;
+    }
+    const lab = it.kind === 'lab' && it.v.breach, n = lab ? lab.frames : WX.hist.length, t = $('waterTime');
+    $('waterTimeRow').hidden = n < 2;
+    if (n >= 2) {
+      t.max = n - 1;
+      const at = lab ? Math.min(WX.labAt, n - 1) : WX.at >= 0 ? WX.at : n - 1;
+      if (document.activeElement !== t) t.value = at;
+      if (lab) $('waterTimeText').textContent = `${Math.round(lab.t[at])} s of ${Math.round(lab.t[n - 1])}`;
+      else {
+        const back = WX.hist[n - 1].W.clock - WX.hist[at].W.clock;
+        $('waterTimeText').textContent = at === n - 1 ? 'now' : `${Math.floor(back / 60)}:${String(Math.round(back % 60)).padStart(2, '0')} ago`;
+      }
+    }
+  }
+  // The legend's keys for the water players build.
+  function updateWaterKeys() {
+    const el = $('waterKeys'), W = S.layers.works && waterShown();
+    const any = W && (W.dams.length || W.pools.length || W.coffers.length || W.lab);
+    el.hidden = !any;
+    if (!any) return;
+    const parts = [];
+    if (W.dams.length || W.lab) parts.push('<span class="key"><i class="w-pool"></i>Dam pool now</span>', '<span class="key"><i class="w-claim"></i>…higher up its tables</span>',
+      '<span class="key"><i class="w-wall"></i>Wall · crest</span>', '<span class="key"><i class="w-round"></i>Way round</span>', '<span class="key" title="The share of its water the river below carries: amber short of it, blue over it; wider where the surge stands"><i class="w-below"></i>River below</span>');
+    if (W.pools.length) parts.push('<span class="key"><i class="w-kept"></i>Kept pool</span>');
+    if (W.coffers.length) parts.push('<span class="key"><i class="w-coffer"></i>Cofferdam, drained</span>');
+    el.innerHTML = parts.join('');
+  }
+
   // ---- readouts
   function tideText(st, tidal, phase, strength) {
     const push = tidePush(st, tidal, phase, strength), most = tidePush(st, tidal, 1, strength);
@@ -2589,6 +3960,15 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       const seaSp = Math.hypot(v2[0], v2[1]);
       if (seaSp > 0.005) row('Sea current', `${seaSp.toFixed(2)} m/s toward ${compass(v2[0], v2[1])}`);
     }
+    if (S.layers.flood && w.levels) {
+      // the river's level here (its 32 m cell's) against this ground (the close-up's 2 m, where loaded)
+      const lv = levelsAt(w, x, z), g = dq ? detailCellAt(dq, x, z) : groundAt(w, x, z);
+      if (lv && g) {
+        const where = ['above the spring flood', "under water at the sea's level already", 'under the river in an ordinary season',
+          'dry in an ordinary season, under the spring flood (the flood plain)'][floodClass(g.h, lv.usual, lv.high)];
+        row('River level', `+${lv.usual.toFixed(2)} m in an ordinary season, +${lv.high.toFixed(2)} m at the spring high water; this ground is ${where}`);
+      }
+    }
     if (S.layers.pools && w.whirlpools.length) {
       let pool = null, best = Infinity;
       for (const p of w.whirlpools) {
@@ -2609,6 +3989,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         if (hs > 0.005) row('Water here', `${hs.toFixed(2)} m/s toward ${compass(here[0], here[1])}`);
       }
     }
+    waterRows(x, z, row);
+    extraRows(w, x, z, dq, row);
     vecAt(w.tide, x, z, v2);
     const full = Math.hypot(v2[0], v2[1]);
     if (full > 0.005) {
@@ -2643,6 +4025,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     $('zoomYou').hidden = !w.you;
     $('poolKey').hidden = !w.whirlpools.length;
     $('tideKeyText').textContent = `Tidal race at full flood, up to ${w.maxTide.toFixed(2)} m/s`;
+  }
+  // The levels layer's keys, with roughly how much land each covers (32 m cells); or why there's nothing to show.
+  function updateFloodKeys() {
+    const el = $('floodKeys'), L = S.w && S.w.levels;
+    el.hidden = !S.layers.flood;
+    if (!S.layers.flood) return;
+    const km2 = cells => { const a = (cells * 32 * 32) / 1e6; return a >= 10 ? Math.round(a).toLocaleString() : a.toFixed(1); };
+    el.innerHTML = L
+      ? `<span class="key" title="Ground above the sea but below its river's level in an ordinary season"><i class="raised"></i>Raised river over land (about ${km2(L.raised)} km²)</span>` +
+        `<span class="key" title="Dry in an ordinary season, under the river at the spring high water"><i class="plain"></i>Spring flood plain (about ${km2(L.plain)} km²)</span>`
+      : '<span class="key">River levels: none in this map (an older export, or RiverLevels off)</span>';
   }
   // The one clock: game days since the world began. The tide, the moon and the time of day all follow it.
   function setTime(D) {
@@ -2827,6 +4220,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     TV.key = '';
     S.groundImg = renderGround(w);
     S.tideImg = renderTide(w);
+    S.floodImg = renderFlood(w);
+    updateFloodKeys();
+    resetExtras();
+    resetWater(w);
     S.vis = new Int32Array(Math.max(1, w.rivers.count));
     S.visCum = new Float64Array(Math.max(1, w.rivers.count));
     S.dvis = new Int32Array(Math.max(1, w.rivers.count));
@@ -3044,6 +4441,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         if (status === 200 && body && body.atlas) { ATLAS.info = body; updateHere(); }
       } catch (e) { /* the game is closed or busy; the page keeps what it has */ }
     }, 10000);
+    // The water players build in the world you're in, while it shows: asked again every 1.5 s, kept for the scrubber.
+    setInterval(pollWater, WATER_POLL_MS);
   }
 
   // ---- wiring
@@ -3111,11 +4510,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     if (f) loadFile(f);
   });
 
-  const layerIds = { layRivers: 'rivers', laySea: 'sea', layTide: 'tide', layWhite: 'white', layPools: 'pools' };
+  const layerIds = { layRivers: 'rivers', laySea: 'sea', layTide: 'tide', layFlood: 'flood', layWhite: 'white', layPools: 'pools', layFords: 'fords', layPower: 'power', layWorks: 'works' };
   for (const [id, key] of Object.entries(layerIds)) {
     $(id).addEventListener('change', e => {
       S.layers[key] = e.target.checked;
       if (key === 'tide') $('tideKey').hidden = !e.target.checked;
+      if (key === 'flood') { updateFloodKeys(); updateReadout(); }
+      if (key === 'fords' || key === 'power') { updateExtraKeys(); updateReadout(); }
+      if (key === 'works') { updateWaterKeys(); updateReadout(); if (e.target.checked) pollWater(); else if (DBG.pick && DBG.pick.kind === 'water') setPick(null); }
       markDirty();
     });
   }
@@ -3129,6 +4531,29 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     $(id).addEventListener('change', e => { DBG[key] = e.target.checked; saveDebugPrefs(); updateDebugPanel(); markDirty(false); });
   }
   $('cellClose').addEventListener('click', () => setPick(null));
+  // The picked pool's level to draw it at, back to now, its cells; the time scrubber (the atlas's readings, or the lab's).
+  const waterRedraw = () => { markDirty(false); updateCellBox(); updateReadout(); };
+  $('waterLevel').addEventListener('input', e => {
+    const p = DBG.pick;
+    if (p && p.kind === 'water') { WX.level = { id: p.id, h: parseFloat(e.target.value) }; waterRedraw(); }
+  });
+  $('waterLive').addEventListener('click', () => { WX.level = null; WX.at = -1; WX.labAt = 0; waterRedraw(); });
+  $('waterClaim').addEventListener('change', e => { WX.claim = e.target.checked; waterRedraw(); });
+  $('waterFill').addEventListener('change', e => { WX.fill = e.target.checked; waterRedraw(); });
+  $('waterTime').addEventListener('input', e => {
+    const p = DBG.pick, W = waterShown(), it = p && p.kind === 'water' && W && waterItem(W, p.id), at = parseInt(e.target.value, 10) || 0;
+    if (it && it.kind === 'lab' && it.v.breach) WX.labAt = at;
+    else WX.at = at >= WX.hist.length - 1 ? -1 : at;
+    waterRedraw();
+  });
+  $('driftBtn').addEventListener('click', () => setDriftMode(!DRIFT.on));
+  for (const input of document.querySelectorAll('input[name="dmin"]')) {
+    input.addEventListener('change', e => {
+      DRIFT.minutes = parseInt(e.target.value, 10) || 15;
+      const p = DRIFT.path;
+      if (p && p.world === S.w && p.end !== 'running') startDrift(p.x0, p.z0, p.D0); // the same spot and moment, the new length
+    });
+  }
 
   $('zoomIn').addEventListener('click', () => zoomAt(S.W / 2, S.H / 2, 1.6));
   $('zoomOut').addEventListener('click', () => zoomAt(S.W / 2, S.H / 2, 1 / 1.6));
@@ -3207,7 +4632,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     if (!moved && downAt) {
       S.hover = toWorld(downAt.x, downAt.y);
       updateReadout();
-      if (DBG.on) pickAt(downAt.x, downAt.y);
+      const picked = DRIFT.on ? null : waterPick(downAt.x, downAt.y);
+      if (DRIFT.on) startDrift(S.hover[0], S.hover[1]);
+      else if (picked) setPick(picked);
+      else if (DBG.on) pickAt(downAt.x, downAt.y);
+      else if (DBG.pick && DBG.pick.kind === 'water') setPick(null);
     }
     downAt = null;
   };
@@ -3230,7 +4659,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     else if (e.key === ' ') { e.preventDefault(); setPlaying(!S.playing); }
     else if (e.key === 't' || e.key === 'T') setTideView(!S.tideView);
     else if (e.key === 'd' || e.key === 'D') setDebug(!DBG.on);
+    else if (e.key === 'r' || e.key === 'R') setDriftMode(!DRIFT.on);
     else if (e.key === 'Escape' && DBG.pick) setPick(null);
+    else if (e.key === 'Escape' && (DRIFT.path || DRIFT.on)) clearDrift();
   });
 
   new ResizeObserver(() => {
@@ -3246,14 +4677,20 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     markDirty();
   }).observe(stage);
 
-  let last = performance.now();
+  let last = performance.now(), unfaded = 0;
   function frame(now) {
     const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
     last = now;
     if (S.playing) setTime(S.D + (dt * S.speed) / GAME_DAY); // the time of day and the moon both run on
     if (S.dirty) redraw();
     if (S.animate) {
-      stepFlow(dt, Math.pow(0.9, dt * 60));
+      // The trails fade at most 30 times a second, by all the time since. Faded every frame, a fast screen's steps are
+      // so small that the canvas's 8 bits round them back up, and old trails never go: faint lines that build up
+      // until the view moves (at 144 Hz, 4% of a trail stays for good; this way under 1% at any rate).
+      unfaded += dt;
+      const fade = unfaded >= 1 / 30 ? Math.pow(0.9, unfaded * 60) : 1;
+      if (fade < 1) unfaded = 0;
+      stepFlow(dt, fade);
       drawMarks(dt);
     }
     requestAnimationFrame(frame);
