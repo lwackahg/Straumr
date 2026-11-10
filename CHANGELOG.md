@@ -1,3 +1,11 @@
+## 0.1.4
+
+A hotfix for hitches when hosting big, heavily built worlds. Nothing about the water changes.
+
+- **Fewer hitches on big bases.** When you host (or play single-player, or run a server) with a large base, the server's check for dams, cofferdams, kept pools and log barriers read every piece in a zone the first time it looked there, which could freeze the game for a fraction of a second when you walked or teleported into a big base. It now reads ahead in spare moments, at most 1 ms a frame, so the check finds the zone already read. On a lab base of about 3,500 pieces, the hitch on walking in fell from about 46 ms to about 10 ms, and the log drive's barrier checks from up to 38 ms to under 2 ms.
+- The very first check after a world loads can still take a few tens of milliseconds while its code warms up.
+- A player on 0.1.3 joining a 0.1.4 server is told the versions differ; the water is the same, but updating is recommended.
+
 ## 0.1.3
 
 **Standalone: BepInEx only.** Straumr still needs only BepInEx. Riverheim, Rivers and Lakes and Worldhalla are read by reflection when they're there, and never required.

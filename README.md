@@ -12,7 +12,7 @@
 
 | | Riverheim 1.2.x | Riverheim 1.3.x |
 |---|---|---|
-| **Straumr 0.1.3** | works | works |
+| **Straumr 0.1.3 and later** | works | works |
 | Straumr 0.1.2 | works | rivers break: update Straumr |
 
 **Multiplayer\*:** install Straumr on the server and on every player's game. \*Tested on a dedicated server with lab clients and the join, config-sync and restart tests; **not yet tested with a group of players.**
