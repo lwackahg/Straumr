@@ -404,6 +404,7 @@ var dams = new List<DamArgs>(); StraumrApi.Dams(dams);   // every dam the server
   Lake`. Below a dam, `Velocity` is the cut current and `Discharge` the water arriving (usual x stage x share), and
   `SurfaceHeight`, `Depth` and `RiverRise` include the surge. `WaterLevel(pos)` is the pool's (the surge's below).
   `Outlook`'s `LevelNow` includes the pool and the surge, and `FlowShare` is the share arriving.
+- Since 0.1.5, on a dedicated server a pool's lift is counted in `Sample`'s `RiverRise` and in `Outlook`'s `LevelNow` (before, it counted as 0 there; the server's own river levels still stand at the sea's level). `ApiVersion` stays 1.
 - A breach is a wall broken (a piece taken out): the pool falls through the gap as over a weir drowned by the water
   below, and settles where the gap alone passes the river. Overtopping never breaks a dam yet. A dam leaves
   (`Gone`) only once none of its walls stands and its pool has drained.

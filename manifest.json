@@ -1,6 +1,6 @@
 {
   "name": "Straumr",
-  "version_number": "0.1.4",
+  "version_number": "0.1.5",
   "website_url": "https://github.com/lwackahg/Straumr",
   "description": "Standalone: BepInEx only. Living water: rivers that flow and stand above the sea, dams, tides, whirlpools, white water, floods and an API. Riverheim 1.2/1.3 and Rivers and Lakes optional. Beta.",
   "dependencies": [

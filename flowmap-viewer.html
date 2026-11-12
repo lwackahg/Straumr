@@ -553,7 +553,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   // ------------------------------------------------------------------ core (no page needed)
   const FORMAT = 'straumr-flowmap-1';
   const BIOMES = ['Ocean', 'Meadows', 'Black Forest', 'Swamp', 'Mountain', 'Plains', 'Mistlands', 'Ashlands', 'Deep North'];
-  const WORLD_EDGE = 10500;
+  const WORLD_EDGE = 10500;   // Valheim's edge of the world (m); a map says its own ("edge": Expand World Size's), older ones don't
   const SQ = 256;             // a detail square's side (m)
   const HERE = '@here';       // the atlas's name for the world the player is in
   const WHITE = 0.3;          // white share past which water shows as foam
@@ -830,7 +830,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   function waterNow(w, squareAt, x, z, t, out) {
     const st = w.settings;
     out[0] = 0; out[1] = 0; out[2] = -1; out[3] = 0;
-    if (x * x + z * z > WORLD_EDGE * WORLD_EDGE) return out;
+    if (x * x + z * z > w.edge * w.edge) return out;
     const phase = tideHere(w, x, z, t, TH)[0];
     const own = squareAt(Math.floor(x / SQ), Math.floor(z / SQ));
     if (own) {
@@ -979,6 +979,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       made: String(j.made || ''),
       day: Number.isFinite(j.day) ? ((j.day % 1) + 1) % 1 : 0.125,
       ocean: num(j.ocean, 30),
+      edge: num(j.edge, WORLD_EDGE),
       you: Array.isArray(j.you) && j.you.length >= 2 && Number.isFinite(j.you[0]) && Number.isFinite(j.you[1]) ? [j.you[0], j.you[1]] : null,
       settings: {
         maxSpeed: num(s.maxSpeed, 3), tides: num(s.tides, 0), whiteFroude: num(s.whiteFroude, 0.45),
@@ -1360,7 +1361,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       w.flagCount = fc;
     }
     const G = w.ground, span = G.n * G.cell;
-    w.extent = Math.min(span, 2 * WORLD_EDGE);
+    w.extent = Math.min(span, 2 * w.edge);
     w.centre = [G.origin + span / 2, G.origin + span / 2];
     return w;
   }
@@ -1450,7 +1451,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   }
   function groundAt(w, x, z) {
     const G = w.ground, col = Math.floor((x - G.origin) / G.cell), row = Math.floor((z - G.origin) / G.cell);
-    if (col < 0 || row < 0 || col >= G.n || row >= G.n || x * x + z * z > WORLD_EDGE * WORLD_EDGE) return null;
+    if (col < 0 || row < 0 || col >= G.n || row >= G.n || x * x + z * z > w.edge * w.edge) return null;
     const i = row * G.n + col;
     return { h: G.height[i] / 10, biome: w.biomes[G.biome[i]] || 'Unknown' };
   }
@@ -1627,7 +1628,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     R.river = Uint16Array.from(pts, p => p.river);
     R.head = R.scale = R.flags = null; // a made-up island has no solver to debug
     return prepare({
-      demo: true, atlas: false, name: 'Sample island', seed: '', preset: '', riversFrom: '', made: '', day: 0.125, ocean: 30, you: [-1700, -880],
+      demo: true, atlas: false, name: 'Sample island', seed: '', preset: '', riversFrom: '', made: '', day: 0.125, ocean: 30, edge: WORLD_EDGE, you: [-1700, -880],
       lunar: true, days: 0, moon: 0, monthDays: 10, // a full moon: spring tides
       settings, biomes: BIOMES, ground: G, sea: S, tide: T, tideLevel: TL, rivers: R,
       // off each end of the strait: the north one turns on the flood, the south one on the ebb
@@ -1739,7 +1740,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         const shade = hillshade(hx, hz), lc = landRGB(G.biome[i], h);
         shades[i] = shade;
         land[i * 3] = lc[0]; land[i * 3 + 1] = lc[1]; land[i * 3 + 2] = lc[2];
-        if (x * x + z * z > WORLD_EDGE * WORLD_EDGE) { d[o + 3] = 0; continue; }
+        if (x * x + z * z > w.edge * w.edge) { d[o + 3] = 0; continue; }
         if (h < 0) put(d, o, waterRGB(-h), 0.88 + 0.12 * shade);
         else put(d, o, lc, shade * (1 + Math.min(h, 200) / 900));
       }
@@ -1759,7 +1760,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     if (!SM.canvas) SM.canvas = document.createElement('canvas');
     if (SM.canvas.width !== ow || SM.canvas.height !== oh) { SM.canvas.width = ow; SM.canvas.height = oh; }
     const ctx = SM.canvas.getContext('2d'), img = ctx.createImageData(ow, oh), d = img.data;
-    const H = G.height, sh = S.gShade, L = S.gLand, e2 = WORLD_EDGE * WORLD_EDGE;
+    const H = G.height, sh = S.gShade, L = S.gLand, e2 = w.edge * w.edge;
     for (let py = 0; py < oh; py++) {
       const z = S.cz - ((py + 0.5) * step - S.H / 2) / S.s;
       const fz = Math.max(0, Math.min(n - 1.001, (z - G.origin) / G.cell - 0.5)), r0 = fz | 0, tz = fz - r0;
@@ -2707,7 +2708,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     for (let j = j0; j <= j1; j++)
       for (let i = i0; i <= i1; i++) {
         const mx = (i + 0.5) * SQ, mz = (j + 0.5) * SQ;
-        if (mx * mx + mz * mz > (WORLD_EDGE + 200) ** 2) continue;
+        if (mx * mx + mz * mz > (S.w.edge + 200) ** 2) continue;
         list.push({ i, j, k: sqKey(i, j), d: (mx - S.cx) ** 2 + (mz - S.cz) ** 2 });
       }
     list.sort((a, b) => a.d - b.d);
@@ -3271,7 +3272,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     if (!w.atlas || !ATLAS.on || ATLAS.closed || DETAIL.stale || DETAIL.seed !== w.seed) return live();
     const i = Math.floor(x / SQ), j = Math.floor(z / SQ), k = sqKey(i, j);
     if (DETAIL.cache.has(k) || DRIFT.failed.has(k)) return live();
-    if (path.fetched >= DRIFT_SQUARES || (i + 0.5) ** 2 * SQ * SQ + (j + 0.5) ** 2 * SQ * SQ > (WORLD_EDGE + 200) ** 2) { DRIFT.failed.add(k); return live(); }
+    if (path.fetched >= DRIFT_SQUARES || (i + 0.5) ** 2 * SQ * SQ + (j + 0.5) ** 2 * SQ * SQ > (w.edge + 200) ** 2) { DRIFT.failed.add(k); return live(); }
     DRIFT.need.add(k);
     path.fetched++;
     updateDriftNote();
