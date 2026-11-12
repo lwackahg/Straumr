@@ -2,8 +2,6 @@
 
 **Living water for Valheim.** Rivers run white, the sea rises and falls with the tide, and you can dam a river and watch the pond fill.
 
-<!-- screenshot: the user picks -->
-
 Straumr runs on Valheim's own worlds, and shows best on Riverheim's river worlds. **It requires only BepInEx:** no framework, no library and no config mod. This is a **beta** (0.1): it works, and it is still being tuned.
 
 > **Want more?** The full guide (every feature, setting, command and known issue) is on GitHub: [GUIDE.md](https://github.com/lwackahg/Straumr/blob/v0.1.5/GUIDE.md). The API for mod makers is there too: [API.md](https://github.com/lwackahg/Straumr/blob/v0.1.5/API.md). Questions and bug reports are welcome on the [Straumr Discord](https://discord.gg/bU9AD8hb8M).
@@ -53,7 +51,7 @@ Every version's changes are in [CHANGELOG.md](https://github.com/lwackahg/Straum
 
 - Install Straumr on the server **and** on every player's game.
 - A game with another Straumr version gets a notice on screen. It is not refused. A live 0.1.4 game joining a 0.1.5 server was not tried.
-- Tested on a dedicated server with lab clients. **Not yet tested with a group of players.**
+- Tested on a dedicated server with lab clients, and played there by one player. **Not yet tested with a group of players.**
 - Settings are in `BepInEx/config/wackah.straumr.cfg`. All of them are in the [guide](https://github.com/lwackahg/Straumr/blob/v0.1.5/GUIDE.md#settings).
 
 ## Riverheim
