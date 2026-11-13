@@ -6,6 +6,11 @@ Straumr runs on Valheim's own worlds, and shows best on Riverheim's river worlds
 
 > **Want more?** The full guide (every feature, setting, command and known issue) is on GitHub: [GUIDE.md](https://github.com/lwackahg/Straumr/blob/v0.1.5/GUIDE.md). The API for mod makers is there too: [API.md](https://github.com/lwackahg/Straumr/blob/v0.1.5/API.md). Questions and bug reports are welcome on the [Straumr Discord](https://discord.gg/bU9AD8hb8M).
 
+## New in 0.1.6
+
+- **Works with Worldhalla 1.0.1.** With it, 0.1.5 couldn't find Riverheim's rivers: they didn't flow, and Straumr fell back to Valheim's own.
+- **Driftwood can be several things.** `[Driftwood] Prefab` takes a list separated by commas, and each spot gets one at random.
+
 ## New in 0.1.5
 
 - **After a crash, ponds come back as at the last world save.**
@@ -103,7 +108,7 @@ No known Breaking issues.
 Not built yet (the ones players try first):
 - **Dirt alone is not a dam.** A dam needs built pieces across the river.
 - **No backwater above a pond.** A pond does not raise the river above it.
-- **Dug cuts:** damming a river does not send it down a dug cut unless the cut ends lower than the dam's crest.
+- **Dug cuts:** a cut dug round a dam's end back into the river just below the wall is not found yet. The pond rises over the crest, and the dug ground beside it shows dry.
 
 ## Want more?
 

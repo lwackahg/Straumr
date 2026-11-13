@@ -333,7 +333,7 @@ Everything is in `BepInEx/config/wackah.straumr.cfg`, and most settings apply wi
 
 **Your own, the rest of the look:** `[Sound]` `Enabled`, `Volume`; `[Mist]` `Enabled`, `Amount`.
 
-**What the world gets** (*server*): `[Driftwood]` `Enabled`, `EveryMinutes`, `Prefab`; `[Fish]` `Enabled`, `EveryMinutes`, `PerSpot`, `Kinds`; `[Rocks]` the rocks set at swallow holes and river sources.
+**What the world gets** (*server*): `[Driftwood]` `Enabled`, `EveryMinutes`, `Prefab` (one prefab name, or several separated by commas: each spot gets one at random. Any networked prefab is taken, not only pickables: a creature or a piece would come at every spot along every river); `[Fish]` `Enabled`, `EveryMinutes`, `PerSpot`, `Kinds`; `[Rocks]` the rocks set at swallow holes and river sources.
 
 **Admin and tools:** `[World]` `StandingRuins` (shared) and `NewWorldSeed` (every new world this game creates gets this seed; made for dedicated servers, which can't be given one); `[Atlas]` `Port`, `HiddenSeeds`; `[Diagnostics]` `CurrentProbe`, `PerfCounters`, `LocationCheck`, `WorldGenCommand` (testing tools, off by default).
 
@@ -415,7 +415,7 @@ None is open.
 
 Limits, not faults.
 - **No backwater above a pond.** A pond does not raise the river above it. Where a dam's water is open to the river above, the water goes round at the river's own level. Planned.
-- **Dirt and dug cuts.** A block of dirt alone is not a dam. A dug low area beside a pond fills as part of that pond and empties when the dam goes. A dam sends a river down a dug cut only if the cut ends lower than the dam's crest. If not, the river, the cut and the low area become one pond that spills over the dam. Not tested: a dug low area with its own exit back to the river. Planned.
+- **Dirt and dug cuts.** A block of dirt alone is not a dam. A dug low area beside a pond fills as part of that pond and empties when the dam goes. A cut dug round a dam's end back into the river just below the wall is not found yet: the pond rises over the crest, and the dug ground beside it shows dry. Planned.
 - **Dead-end hollows.** A hollow with no lower exit is not a basin of its own. Planned.
 - **Ponds have no ripples or glints.** The river's surface has them. A later version may add them.
 - **Surges follow the river's line.** A surge does not spread into side channels, round islands or into bays. Planned.

@@ -1,3 +1,12 @@
+## 0.1.6
+
+A hotfix for Worldhalla 1.0.1 (13 November 2026). Worldhalla 1.0.1 no longer has the property through which 0.1.5 found Riverheim's world. With 0.1.5 on Worldhalla 1.0.1, Straumr said "couldn't read Riverheim" at start and used Valheim's own rivers for the session, so Riverheim's rivers didn't flow. 0.1.6 finds Riverheim's world on Worldhalla 1.0.0 and 1.0.1. Checked on a dedicated server with Riverheim 1.3.1: the same rivers and flows read on both.
+
+- **Driftwood: a list.** `[Driftwood] Prefab` takes several prefab names separated by commas. Each spot gets one of them at random, and a name given twice comes twice as often. A name the game doesn't know is named in the status line and left out; if none is known, nothing washes up. Any networked prefab is taken, as before, not only pickables: a creature or a building piece would come at every spot along every river, and again whenever it's gone. The setting's description now says so.
+- **Docs:** the README's line on dug cuts said a cut lower than the dam's crest is found. A cut dug round a dam's end back into the river just below the wall is not found yet: the pond rises over the crest, and the dug ground shows dry.
+
+Nothing else changed from 0.1.5.
+
 ## 0.1.5
 
 0.1.5 redraws how built water looks, fixes how it comes back after a crash and what a ring's breach does to the pond above it, and reads worlds of any size with Expand World Size. The water's behaviour (levels, storage, flows) is the same as 0.1.4's apart from those fixes; what else changed is where Straumr draws water the server has already decided on. The drawing was played by one player on a dedicated server through successive builds, each fixing what the last one showed (see [Known issues](https://github.com/lwackahg/Straumr/blob/v0.1.5/GUIDE.md#known-issues) for what is still open). Still **Standalone: requires only BepInEx.** No setting was added, renamed, removed or given a new default.
